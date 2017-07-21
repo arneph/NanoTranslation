@@ -74,9 +74,8 @@ public class Translations {
 		}
 	}
 	
-	public void addLanguage(String language, String languageTag) {
+	public void addLanguage(String language) {
 		if (language == null || language.equals("") || 
-			languageTag == null || languageTag.equals("") || 
 			getIndexOfLanguage(language) != -1) {
 			throw new IllegalArgumentException();
 		}
@@ -234,6 +233,88 @@ public class Translations {
 		}
 		
 		entries[index].information = information;
+	}
+	
+	public void addEntry(String key) {
+		if (key == null || key.equals("") || 
+			getIndexOfKeyOfEntry(key) != -1) {
+			throw new IllegalArgumentException();
+		}
+		
+		Entry entry = new Entry();
+		
+		entry.key = key;
+		entry.translations = new HashMap<>(languages.length);
+		entry.information = "";
+		
+		for (int i = 0; i < languages.length; i++) {
+			entry.translations.put(languages[i], "");
+		}
+		
+		int n = entries.length;
+		
+		entries = Arrays.copyOf(entries, n + 1);
+		entries[n] = entry;
+		
+		Arrays.sort(entries);
+	}
+	
+	public void removeEntry(int index) {
+		if (index < 0 || index >= entries.length) {
+			throw new IllegalArgumentException();
+		}
+		
+		int n = entries.length;
+		
+		for (int i = index; i < n - 1; i++) {
+			entries[i] = entries[i + 1];
+		}
+		
+		entries = Arrays.copyOf(entries, n - 1);
+	}
+	
+	public boolean equals(Translations t) {
+		if (t == null) return false;
+		
+		if (getNumberOfLanguages() != t.getNumberOfLanguages()) return false;
+		
+		for (int i = 0; i < getNumberOfLanguages(); i++) {
+			if (getLanguageAtIndex(i).equals(t.getLanguageAtIndex(i)) == false) return false;
+		}
+		
+		if (getNumberOfEntries() != t.getNumberOfEntries()) return false;
+		
+		for (int i = 0; i < entries.length; i++) {
+			if (getKeyOfEntryAtIndex(i).equals(getKeyOfEntryAtIndex(i)) == false) return false;
+			
+			for (int j = 0; j < getNumberOfLanguages(); j++) {
+				if (getTranslationForLanguageOfEntryAtIndex(i, j).equals(t.getTranslationForLanguageOfEntryAtIndex(i, j)) == false) return false;
+			}
+			
+			if (getInformationOfEntryAtIndex(i).equals(t.getInformationOfEntryAtIndex(i)) == false) return false;
+		}
+		
+		return true;
+	}
+	
+	public Translations clone() {
+		Translations t = new Translations();
+		
+		for (int i = 0; i < getNumberOfLanguages(); i++) {
+			t.addLanguage(getLanguageAtIndex(i));
+		}
+		
+		for (int i = 0; i < getNumberOfEntries(); i++) {
+			t.addEntry(getKeyOfEntryAtIndex(i));
+			
+			for (int j = 0; j < getNumberOfLanguages(); j++) {
+				t.setTranslationForLanguageOfEntryAtIndex(i, j, getTranslationForLanguageOfEntryAtIndex(i, j));
+			}
+			
+			t.setInformationOfEntryAtIndex(i, getInformationOfEntryAtIndex(i));
+		}
+		
+		return t;
 	}
 	
 }
