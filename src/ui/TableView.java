@@ -18,11 +18,11 @@ public class TableView extends JPanel implements FocusListener,
 	private ScrollView scrollView;
 	private JPanel contentView;
 	private JPanel[] tableRows;
-	private JTextField[][] tableCells;
+	private JTextArea[][] tableCells;
 	
 	private ArrayList<JLabel> tableHeaderReuseQueue;
 	private ArrayList<JPanel> tableRowReuseQueue;
-	private ArrayList<JTextField> tableCellReuseQueue;
+	private ArrayList<JTextArea> tableCellReuseQueue;
 	
 	public TableView() {
 		dataSource = null;
@@ -45,7 +45,7 @@ public class TableView extends JPanel implements FocusListener,
 		scrollView.setViewportView(contentView);
 		
 		tableRows = new JPanel[0];
-		tableCells = new JTextField[0][0];
+		tableCells = new JTextArea[0][0];
 		
 		tableHeaderReuseQueue = new ArrayList<>(10);
 		tableRowReuseQueue = new ArrayList<>(100);
@@ -81,8 +81,12 @@ public class TableView extends JPanel implements FocusListener,
 	}
 	
 	public void setSelectedCell(int columnIndex, int rowIndex) {
-		if (columnIndex < 0 || columnIndex >= tableHeaders.length || 
-			rowIndex < 0 || rowIndex >= tableCells.length) {
+		int c = tableHeaders.length;
+		int r = tableCells.length;
+		
+		if (columnIndex < -1 || columnIndex >= c || 
+			rowIndex < -1 || rowIndex >= r || 
+			(columnIndex == -1) != (rowIndex == -1)) {
 			throw new IllegalArgumentException();
 		}
 		
@@ -91,12 +95,47 @@ public class TableView extends JPanel implements FocusListener,
 			JLabel header = tableHeaders[selectedColumn];
 			
 			header.setForeground(Color.gray);
+			
+			JPanel row = tableRows[selectedRow];
+			
+			row.setBackground(null);
+			
+			for (int i = 0; i < c; i++) {
+				JTextArea cell = tableCells[selectedRow][i];
+				
+				cell.setForeground(Color.gray);
+			}
 		}
 		
 		selectedColumn = columnIndex;
 		selectedRow = rowIndex;
 		
-		//TODO
+		if (selectedColumn != -1 && 
+			selectedRow != -1) {
+			JLabel header = tableHeaders[selectedColumn];
+			
+			header.setForeground(Color.black);
+			
+			JPanel row = tableRows[selectedRow];
+			
+			row.setBackground(Color.lightGray);
+			
+			for (int i = 0; i < c; i++) {
+				JTextArea cell = tableCells[selectedRow][i];
+				
+				cell.setForeground(Color.black);
+			}
+			
+			JTextArea cell = tableCells[selectedRow][selectedColumn];
+			
+			cell.requestFocusInWindow();
+		}
+		
+		repositionContents();
+		
+		if (getDelegate() != null) {
+			getDelegate().selectionChanged(this);
+		}
 	}
 	
 	public void reloadData() {
@@ -122,19 +161,6 @@ public class TableView extends JPanel implements FocusListener,
 			addRows(r);
 		}
 		
-		reloadData();
-		repositionContents();
-	}
-	
-	public void reloadContents() {
-		if (getDataSource() == null) {
-			reloadData();
-			return;
-		}
-		
-		int c = tableHeaders.length;
-		int r = tableCells.length;
-		
 		for (int i = 0; i < c; i++) {
 			String columnTitle = getDataSource().getColumnTitle(this, i);
 			JLabel header = tableHeaders[i];
@@ -159,7 +185,7 @@ public class TableView extends JPanel implements FocusListener,
 			
 			for (int j = 0; j < c; j++) {
 				String cellValue = getDataSource().getCellValue(this, j, i);
-				JTextField cell = tableCells[i][j];
+				JTextArea cell = tableCells[i][j];
 				
 				if (selectedRow != i) {
 					cell.setForeground(Color.gray);
@@ -170,6 +196,8 @@ public class TableView extends JPanel implements FocusListener,
 				cell.setText(cellValue);
 			}
 		}
+		
+		repositionContents();
 	}
 	
 	private void addColumns(int c) {
@@ -192,7 +220,7 @@ public class TableView extends JPanel implements FocusListener,
 			tableCells[i] = Arrays.copyOf(tableCells[i], c);
 			
 			for (int j = oldC; j < c; j++) {
-				JTextField cell = getTableCell();
+				JTextArea cell = getTableCell();
 				
 				row.add(cell);
 				
@@ -219,7 +247,7 @@ public class TableView extends JPanel implements FocusListener,
 			JPanel row = tableRows[i];
 			
 			for (int j = c; j < oldC; j++) {
-				JTextField cell = tableCells[i][j];
+				JTextArea cell = tableCells[i][j];
 				
 				row.remove(cell);
 				
@@ -243,10 +271,10 @@ public class TableView extends JPanel implements FocusListener,
 			contentView.add(row);
 			
 			tableRows[i] = row;
-			tableCells[i] = new JTextField[c];
+			tableCells[i] = new JTextArea[c];
 			
 			for (int j = 0; j < c; j++) {
-				JTextField cell = getTableCell();
+				JTextArea cell = getTableCell();
 				
 				row.add(cell);
 				
@@ -267,10 +295,10 @@ public class TableView extends JPanel implements FocusListener,
 			
 			tableRowReuseQueue.add(row);
 			
-			tableCells[i] = new JTextField[c];
+			tableCells[i] = new JTextArea[c];
 			
 			for (int j = 0; j < c; j++) {
-				JTextField cell = tableCells[i][j];
+				JTextArea cell = tableCells[i][j];
 				
 				tableCellReuseQueue.add(cell);
 			}
@@ -286,12 +314,12 @@ public class TableView extends JPanel implements FocusListener,
 		if (n > 0) {
 			return tableHeaderReuseQueue.remove(n - 1);
 		}else{
-			JLabel label = new JLabel();
+			JLabel header = new JLabel();
 			
-			label.setBackground(null);
-			label.setForeground(Color.gray);
+			header.setBackground(null);
+			header.setForeground(Color.gray);
 			
-			return label;
+			return header;
 		}
 	}
 	
@@ -301,31 +329,31 @@ public class TableView extends JPanel implements FocusListener,
 		if (n > 0) {
 			return tableRowReuseQueue.remove(n - 1);
 		}else{
-			JPanel panel = new JPanel();
+			JPanel row = new JPanel();
 			
-			panel.setBackground(null);
-			panel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.lightGray));
-			panel.setLayout(null);
+			row.setBackground(null);
+			row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.lightGray));
+			row.setLayout(null);
 			
-			return panel;
+			return row;
 		}
 	}
 	
-	private JTextField getTableCell() {
+	private JTextArea getTableCell() {
 		int n = tableCellReuseQueue.size();
 		
 		if (n > 0) {
 			return tableCellReuseQueue.remove(n - 1);
 		}else{
-			JTextField field = new JTextField();
+			JTextArea cell = new JTextArea();
 			
-			field.setBackground(null);
-			field.setForeground(Color.gray);
-			field.setBorder(null);
-			field.addFocusListener(this);
-			field.addKeyListener(this);
+			cell.setBackground(null);
+			cell.setForeground(Color.gray);
+			cell.setBorder(null);
+			cell.addFocusListener(this);
+			cell.addKeyListener(this);
 			
-			return field;
+			return cell;
 		}
 	}
 	
@@ -392,7 +420,7 @@ public class TableView extends JPanel implements FocusListener,
 			row.setSize(contentWidth, rowH);
 			
 			for (int j = 0; j < c; j++) {
-				JTextField cell = tableCells[i][j];
+				JTextArea cell = tableCells[i][j];
 				
 				cell.setLocation(columnXs[j], rowY);
 				cell.setSize(columnWidths[j], rowH - 1);
@@ -401,11 +429,42 @@ public class TableView extends JPanel implements FocusListener,
 	}
 	
 	public void focusGained(FocusEvent e) {
+		int c = tableHeaders.length;
+		int r = tableCells.length;
 		
+		for (int i = 0; i < r; i++) {
+			for (int j = 0; j < c; j++) {
+				JTextArea cell = tableCells[i][j];
+				
+				if (cell != e.getSource()) continue;
+				
+				setSelectedCell(j, i);
+			}
+		}
 	}
 	
 	public void focusLost(FocusEvent e) {
+		int c = tableHeaders.length;
+		int r = tableCells.length;
 		
+		for (int i = 0; i < r; i++) {
+			for (int j = 0; j < c; j++) {
+				JTextArea cell = tableCells[i][j];
+				
+				if (cell != e.getSource()) continue;
+				
+				if (getDataSource() == null) {
+					reloadData();
+				}else{
+					getDataSource().setCellValue(this, j, i, cell.getText());
+				}
+				
+				if (selectedColumn == j && 
+					selectedRow == i) {
+					setSelectedCell(-1, -1);
+				}
+			}
+		}
 	}
 	
 	public void keyTyped(KeyEvent e) {
@@ -421,12 +480,12 @@ public class TableView extends JPanel implements FocusListener,
 		
 		for (int i = 0; i < r; i++) {
 			for (int j = 0; j < c; j++) {
-				JTextField cell = tableCells[i][j];
+				JTextArea cell = tableCells[i][j];
 				
 				if (cell != e.getSource()) continue;
 				
 				if (getDataSource() == null) {
-					reloadContents();
+					reloadData();
 				}else{
 					getDataSource().setCellValue(this, j, i, cell.getText());
 				}
@@ -434,6 +493,7 @@ public class TableView extends JPanel implements FocusListener,
 				if (e.getKeyCode() == KeyEvent.VK_ESCAPE && 
 					cell.hasFocus()) {
 					
+					setSelectedCell(-1, -1);
 				}
 			}
 		}
