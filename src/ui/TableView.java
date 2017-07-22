@@ -295,7 +295,7 @@ public class TableView extends JPanel implements FocusListener,
 		int c = tableHeaders.length;
 		int oldR = tableCells.length;
 		
-		for (int i = oldR; i < r; i++) {
+		for (int i = r; i < oldR; i++) {
 			JPanel row = tableRows[i];
 			
 			contentView.remove(row);
