@@ -303,8 +303,6 @@ public class TableView extends JPanel implements FocusListener,
 			
 			tableRowReuseQueue.add(row);
 			
-			tableCells[i] = new JTextArea[c];
-			
 			for (int j = 0; j < c; j++) {
 				JTextArea cell = tableCells[i][j];
 				
