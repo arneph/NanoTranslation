@@ -384,7 +384,7 @@ public class DocumentWindow extends JFrame implements ActionListener,
 			checkBox.setLocation(1, 1);
 			checkBox.setSize(20, 20);
 			
-			if (!label.hasFocus()) {
+			if (!label.isFocusOwner()) {
 				label.setLocation(22, 1);
 				label.setSize(Math.min(137, label.getPreferredSize().width), 20);
 			}else{
