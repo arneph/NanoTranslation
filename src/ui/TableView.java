@@ -7,7 +7,8 @@ import java.util.*;
 import javax.swing.*;
 
 public class TableView extends JPanel implements FocusListener, 
-												 KeyListener{
+												 KeyListener, 
+												 MouseListener {
 	private TableViewDataSource dataSource;
 	private TableViewDelegate delegate;
 	
@@ -41,6 +42,7 @@ public class TableView extends JPanel implements FocusListener,
 		contentView = new JPanel();
 		contentView.setLayout(null);
 		contentView.setPreferredSize(new Dimension(0, 0));
+		contentView.addMouseListener(this);
 		
 		scrollView.setViewportView(contentView);
 		
@@ -501,6 +503,17 @@ public class TableView extends JPanel implements FocusListener,
 	
 	public void keyPressed(KeyEvent e) {}
 	public void keyReleased(KeyEvent e) {}
+	
+	public void mouseClicked(MouseEvent e) {
+		if (e.getSource() == contentView) {
+			setSelectedCell(-1, -1);
+		}
+	}
+	
+	public void mousePressed(MouseEvent e) {}
+	public void mouseReleased(MouseEvent e) {}
+	public void mouseEntered(MouseEvent e) {}
+	public void mouseExited(MouseEvent e) {}
 	
 	//Interfaces:
 	public interface TableViewDataSource {
