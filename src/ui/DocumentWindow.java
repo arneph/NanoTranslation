@@ -48,17 +48,6 @@ public class DocumentWindow extends JFrame implements ActionListener,
 	private JButton addLanguageButton;
 	private JButton removeLanguageButton;
 	
-	private int selectedEntryIndex;
-	
-	private JScrollPane entriesScrollPane;
-	private JPanel entriesContentPane;
-	private JPanel[] entryPanels;
-	private JTextField[] keyFields;
-	private JTextField[][] translationsFields;
-	private JTextField[] informationFields;
-	private JButton addEntryButton;
-	private JButton removeEntryButton;
-	
 	public DocumentWindow() {
 		int modifiers = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 		
