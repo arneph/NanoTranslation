@@ -475,9 +475,16 @@ public class TableView extends JPanel implements FocusListener,
 	
 	public void keyTyped(KeyEvent e) {
 		if (e.getKeyCode() != KeyEvent.VK_ESCAPE && 
-			e.getKeyCode() != KeyEvent.VK_ENTER) {
+			e.getSource() instanceof JTextArea) {
+			JFrame frame = (JFrame) SwingUtilities.getRoot(this);
+			
+			if (frame != null) frame.requestFocusInWindow();
+			
 			return;
-		}else if ((e.getModifiers() & KeyEvent.ALT_DOWN_MASK) != 0) {
+		}
+		
+		if (e.getKeyCode() != KeyEvent.VK_ENTER || 
+		    (e.getModifiers() & KeyEvent.ALT_DOWN_MASK) != 0) {
 			return;
 		}
 		
@@ -494,12 +501,6 @@ public class TableView extends JPanel implements FocusListener,
 					reloadData();
 				}else{
 					getDataSource().setCellValue(this, j, i, cell.getText());
-				}
-				
-				if (e.getKeyCode() == KeyEvent.VK_ESCAPE && 
-					cell.hasFocus()) {
-					
-					setSelectedCell(-1, -1);
 				}
 			}
 		}
