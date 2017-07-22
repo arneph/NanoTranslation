@@ -147,6 +147,12 @@ public class TableView extends JPanel implements FocusListener,
 		if (c < 0) c = 0;
 		if (r < 0) r = 0;
 		
+		if (selectedColumn >= c || 
+			selectedRow >= r) {
+			selectedColumn = -1;
+			selectedRow = -1;
+		}
+		
 		int oldC = tableHeaders.length;
 		int oldR = tableCells.length;
 		
