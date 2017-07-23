@@ -15,8 +15,9 @@ public class TableView extends JPanel implements FocusListener,
 	private int selectedColumn;
 	private int selectedRow;
 	
-	private JLabel[] tableHeaders;
 	private ScrollView scrollView;
+	private JPanel headerView;
+	private JLabel[] tableHeaders;
 	private JPanel contentView;
 	private JPanel[] tableRows;
 	private JTextArea[][] tableCells;
@@ -32,8 +33,6 @@ public class TableView extends JPanel implements FocusListener,
 		selectedColumn = -1;
 		selectedRow = -1;
 		
-		setBackground(Color.white);
-		setBorder(BorderFactory.createLineBorder(Color.lightGray, 1));
 		setLayout(null);
 		
 		tableHeaders = new JLabel[0];
@@ -44,6 +43,22 @@ public class TableView extends JPanel implements FocusListener,
 		scrollView.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		scrollView.setBorder(BorderFactory.createLineBorder(Color.lightGray, 1));
 		
+		headerView = new JPanel();
+		headerView.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.lightGray));
+		headerView.setOpaque(false);
+		headerView.setLayout(null);
+		headerView.setPreferredSize(new Dimension(0, 23));
+		
+		JPanel topRightCornerView = new JPanel();
+		topRightCornerView.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.lightGray));
+		topRightCornerView.setOpaque(false);
+		topRightCornerView.setPreferredSize(new Dimension(18, 23));
+		
+		JPanel bottomRightCornerView = new JPanel();
+		bottomRightCornerView.setBackground(new Color(223, 223, 223));
+		bottomRightCornerView.setOpaque(true);
+		bottomRightCornerView.setPreferredSize(new Dimension(18, 18));
+		
 		contentView = new JPanel();
 		contentView.setOpaque(false);
 		contentView.setLayout(null);
@@ -51,6 +66,9 @@ public class TableView extends JPanel implements FocusListener,
 		contentView.addMouseListener(this);
 		
 		scrollView.setViewportView(contentView);
+		scrollView.setColumnHeaderView(headerView);
+		scrollView.setCorner(ScrollPaneConstants.UPPER_RIGHT_CORNER, topRightCornerView);
+		scrollView.setCorner(ScrollPaneConstants.LOWER_RIGHT_CORNER, bottomRightCornerView);
 		scrollView.getViewport().setOpaque(false);
 		
 		add(scrollView);
@@ -228,7 +246,7 @@ public class TableView extends JPanel implements FocusListener,
 		for (int i = oldC; i < c; i++) {
 			JLabel header = getTableHeader();
 			
-			add(header);
+			headerView.add(header);
 			
 			tableHeaders[i] = header;
 		}
@@ -255,7 +273,7 @@ public class TableView extends JPanel implements FocusListener,
 		for (int i = c; i < oldC; i++) {
 			JLabel header = tableHeaders[i];
 			
-			remove(header);
+			headerView.remove(header);
 			
 			tableHeaderReuseQueue.add(header);
 		}
@@ -390,8 +408,8 @@ public class TableView extends JPanel implements FocusListener,
 		int w = getWidth();
 		int h = getHeight();
 		
-		scrollView.setLocation(0, 23);
-		scrollView.setSize(w, h - 23);
+		scrollView.setLocation(0, 0);
+		scrollView.setSize(w, h);
 		
 		int c = tableHeaders.length;
 		int r = tableCells.length;
@@ -402,18 +420,18 @@ public class TableView extends JPanel implements FocusListener,
 		int[] columnWidths = new int[c];
 		int contentWidth;
 		
-		if ((w - 16) / c < 200) {
+		if ((w - 18) / c < 200) {
 			for (int i = 0; i < c; i++) {
-				columnXs[i] = i * 250;
-				columnWidths[i] = 250;
+				columnXs[i] = i * 200;
+				columnWidths[i] = 200;
 			}
-			contentWidth = c * 250;
+			contentWidth = c * 200;
 		}else{
 			for (int i = 0; i < c; i++) {
 				columnXs[i] = (i == 0) ? 0 : columnXs[i - 1] + columnWidths[i - 1];
-				columnWidths[i] = (w - 16) / c + ((i < (w - 16) % c) ? 1 : 0);
+				columnWidths[i] = (w - 18) / c + ((i < (w - 16) % c) ? 1 : 0);
 			}
-			contentWidth = w - 16;
+			contentWidth = w - 18;
 		}
 		
 		for (int i = 0; i < c; i++) {
@@ -422,6 +440,8 @@ public class TableView extends JPanel implements FocusListener,
 			header.setLocation(columnXs[i], 0);
 			header.setSize(columnWidths[i], 22);
 		}
+		
+		headerView.setPreferredSize(new Dimension(contentWidth, 23));
 		
 		if (selectedRow == -1) {
 			contentView.setPreferredSize(new Dimension(contentWidth, r * 23 - 1));

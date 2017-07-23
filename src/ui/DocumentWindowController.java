@@ -35,10 +35,6 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		
 		activeLanguages = new HashMap<>();
 		
-		for (int i = 0; i < document.getTranslations().getNumberOfLanguages(); i++) {
-			activeLanguages.put(document.getTranslations().getLanguageAtIndex(i), Boolean.TRUE);
-		}
-		
 		window = new DocumentWindow();
 		
 		window.setDataSource(this);
@@ -74,6 +70,12 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		
 		window.getLanguagesListView().setDataSource(this);
 		window.getLanguagesListView().setDelegate(this);
+		
+		window.getLanguageSelectionListView().setDataSource(this);
+		window.getLanguageSelectionListView().setDelegate(this);
+		
+		window.getEntriesTableView().setDataSource(this);
+		window.getEntriesTableView().setDelegate(this);
 		
 		window.setVisible(true);
 	}
@@ -296,6 +298,9 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 			}
 			
 			window.reloadData();
+			window.getLanguagesListView().reloadData();
+			window.getLanguageSelectionListView().reloadData();
+			window.getEntriesTableView().reloadData();
 			
 		}else{
 			NanoTranslation.newWindowController(f);			
