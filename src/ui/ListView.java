@@ -7,9 +7,9 @@ import java.util.*;
 import javax.swing.*;
 
 public class ListView extends JPanel implements ActionListener, 
-												MouseListener, 
 												FocusListener, 
-												KeyListener {
+												KeyListener, 
+												MouseListener {
 	public ListViewDataSource dataSource;
 	public ListViewDelegate delegate;
 	
@@ -27,17 +27,24 @@ public class ListView extends JPanel implements ActionListener,
 		
 		selectedRow = -1;
 		
+		setLayout(null);
+		
 		scrollView = new ScrollView();
+		scrollView.setBackground(Color.white);
 		scrollView.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollView.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		scrollView.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, Color.lightGray));
+		scrollView.setBorder(BorderFactory.createLineBorder(Color.lightGray, 1));
 		
 		contentView = new JPanel();
+		contentView.setOpaque(false);
 		contentView.setLayout(null);
 		contentView.setPreferredSize(new Dimension(0, 0));
 		contentView.addMouseListener(this);
 		
 		scrollView.setViewportView(contentView);
+		scrollView.getViewport().setOpaque(false);
+		
+		add(scrollView);
 		
 		listRows = new JPanel[0];
 		listCheckBoxes = new JCheckBox[0];
@@ -69,6 +76,10 @@ public class ListView extends JPanel implements ActionListener,
 	}
 	
 	public void setSelectedRow(int index) {
+		boolean allowSelection = (getDelegate() != null) ? getDelegate().shouldAllowSelection(this) : true;
+		
+		if (!allowSelection) index = -1;
+		
 		int r = listRows.length;
 		
 		if (index < -1 || index >= r) {
@@ -78,7 +89,7 @@ public class ListView extends JPanel implements ActionListener,
 		if (selectedRow != -1) {
 			JPanel row = listRows[selectedRow];
 			
-			row.setBackground(null);
+			row.setBackground(Color.white);
 		}
 		
 		selectedRow = index;
@@ -96,6 +107,8 @@ public class ListView extends JPanel implements ActionListener,
 	
 	public void reloadData() {
 		int r = (getDataSource() != null) ? getDataSource().getNumberOfRows(this) : 0;
+		boolean showCheckBoxes = (getDelegate() != null) ? getDelegate().shouldShowCheckBoxes(this) : false;
+		boolean allowEditing = (getDelegate() != null) ? getDelegate().shouldAllowEditing(this) : true;
 		
 		if (r < 0) r = 0;
 		
@@ -117,18 +130,22 @@ public class ListView extends JPanel implements ActionListener,
 			JPanel row = listRows[i];
 			JCheckBox checkBox = listCheckBoxes[i];
 			JTextField cell = listCells[i];
-
+			
 			if (selectedRow != i) {
-				row.setBackground(null);
+				row.setBackground(Color.white);
 			}else{
 				row.setBackground(Color.lightGray);
 			}
 			
 			checkBox.setSelected(checked);
+			checkBox.setVisible(showCheckBoxes);
 			cell.setText(cellValue);
+			cell.setEnabled(allowEditing);
 		}
 		
 		repositionContents();
+		revalidate();
+		repaint();
 	}
 	
 	private void addRows(int r) {
@@ -141,9 +158,10 @@ public class ListView extends JPanel implements ActionListener,
 		for (int i = oldR; i < r; i++) {
 			JPanel row = new JPanel();
 			
-			row.setBackground(null);
+			row.setBackground(Color.white);
 			row.setBorder(null);
 			row.setLayout(null);
+			row.addMouseListener(this);
 			
 			JCheckBox checkBox = new JCheckBox();
 			
@@ -218,15 +236,26 @@ public class ListView extends JPanel implements ActionListener,
 			row.setLocation(0, i * 23);
 			row.setSize(w - 18, 22);
 			
-			checkBox.setLocation(1, 1);
-			checkBox.setSize(20, 20);
-			
-			if (!cell.isFocusOwner()) {
-				cell.setLocation(22, 0);
-				cell.setSize(Math.min(w - 40, cell.getPreferredSize().width), 22);
+			if (checkBox.isVisible()) {
+				checkBox.setLocation(1, 1);
+				checkBox.setSize(20, 20);
+				
+				if (!cell.isFocusOwner()) {
+					cell.setLocation(22, 0);
+					cell.setSize(Math.min(w - 41, cell.getPreferredSize().width), 22);
+				}else{
+					cell.setLocation(22, 0);
+					cell.setSize(w - 41, 22);
+				}
+				
 			}else{
-				cell.setLocation(22, 0);
-				cell.setSize(w - 40, 22);
+				if (!cell.isFocusOwner()) {
+					cell.setLocation(1, 0);
+					cell.setSize(Math.min(w - 20, cell.getPreferredSize().width), 22);
+				}else{
+					cell.setLocation(1, 0);
+					cell.setSize(w - 20, 22);
+				}
 			}
 		}
 	}
@@ -258,6 +287,7 @@ public class ListView extends JPanel implements ActionListener,
 			if (cell != e.getSource()) continue;
 			
 			setSelectedRow(i);
+			repositionContents();
 		}
 	}
 	
@@ -274,36 +304,37 @@ public class ListView extends JPanel implements ActionListener,
 			}else{
 				getDataSource().setRowValue(this, i, cell.getText());
 			}
+			
+			repositionContents();
 		}
 	}
 	
-	public void keyTyped(KeyEvent e) {
-		if (e.getKeyCode() != KeyEvent.VK_ESCAPE && 
-			e.getKeyCode() != KeyEvent.VK_ENTER) {
-			return;
-		}
-		
-		int r = listRows.length;
-		
-		for (int i = 0; i < r; i++) {
-			JTextField cell = listCells[i];
+	public void keyTyped(KeyEvent e) {}
+	
+	public void keyPressed(KeyEvent e) {
+		if ((e.getKeyCode() == KeyEvent.VK_ESCAPE || 
+			 e.getKeyCode() == KeyEvent.VK_ENTER) && 
+			e.getSource() instanceof JTextField) {
+			JFrame frame = (JFrame) SwingUtilities.getRoot(this);
 			
-			if (cell != e.getSource()) continue;
-			
-			if (getDataSource() == null) {
-				reloadData();
-			}else{
-				getDataSource().setRowValue(this, i, cell.getText());
-			}
+			if (frame != null) frame.requestFocusInWindow();
 		}
 	}
 	
-	public void keyPressed(KeyEvent e) {}
 	public void keyReleased(KeyEvent e) {}
-
+	
 	public void mouseClicked(MouseEvent e) {
 		if (e.getSource() == contentView) {
 			setSelectedRow(-1);
+			
+		}else{
+			for (int i = 0; i < listRows.length; i++) {
+				JPanel row = listRows[i];
+				
+				if (row != e.getSource()) continue;
+				
+				setSelectedRow(i);
+			}
 		}
 	}
 	
@@ -317,7 +348,7 @@ public class ListView extends JPanel implements ActionListener,
 		
 		public int getNumberOfRows(ListView listView);
 		public boolean isRowChecked(ListView listView, int index);
-		public boolean setRowChecked(ListView listView, int index, boolean checked);
+		public void setRowChecked(ListView listView, int index, boolean checked);
 		public String getRowValue(ListView listView, int index);
 		public void setRowValue(ListView listView, int index, String value);
 		
@@ -326,6 +357,8 @@ public class ListView extends JPanel implements ActionListener,
 	public interface ListViewDelegate {
 		
 		public boolean shouldShowCheckBoxes(ListView listView);
+		public boolean shouldAllowSelection(ListView listView);
+		public boolean shouldAllowEditing(ListView listView);
 		
 		public void selectionChanged(ListView listView);
 		

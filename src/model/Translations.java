@@ -102,7 +102,7 @@ public class Translations {
 		int n = languages.length;
 		
 		for (int i = index; i < n - 1; i++) {
-			languages[index] = languages[index + 1];
+			languages[i] = languages[i + 1];
 		}
 		
 		languages = Arrays.copyOf(languages, n - 1);

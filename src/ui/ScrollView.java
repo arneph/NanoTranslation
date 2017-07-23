@@ -37,12 +37,12 @@ public class ScrollView extends JScrollPane {
 	    }
 		
         protected void paintThumb(Graphics g, JComponent c, Rectangle r) {
-    		g.setColor(Color.gray);
+    		g.setColor(Color.lightGray);
     		g.fillRoundRect(r.x, r.y, r.width, r.height, 0, 0);
         }
         
         protected void paintTrack(Graphics g, JComponent c, Rectangle r) {
-    		g.setColor(Color.lightGray);
+    		g.setColor(new Color(223, 223, 223));
     		g.fillRect(r.x, r.y, r.width, r.height);
         }
 

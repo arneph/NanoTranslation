@@ -32,19 +32,28 @@ public class TableView extends JPanel implements FocusListener,
 		selectedColumn = -1;
 		selectedRow = -1;
 		
+		setBackground(Color.white);
+		setBorder(BorderFactory.createLineBorder(Color.lightGray, 1));
+		setLayout(null);
+		
 		tableHeaders = new JLabel[0];
 		
 		scrollView = new ScrollView();
+		scrollView.setBackground(Color.white);
 		scrollView.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollView.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		scrollView.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, Color.lightGray));
+		scrollView.setBorder(BorderFactory.createLineBorder(Color.lightGray, 1));
 		
 		contentView = new JPanel();
+		contentView.setOpaque(false);
 		contentView.setLayout(null);
 		contentView.setPreferredSize(new Dimension(0, 0));
 		contentView.addMouseListener(this);
 		
 		scrollView.setViewportView(contentView);
+		scrollView.getViewport().setOpaque(false);
+		
+		add(scrollView);
 		
 		tableRows = new JPanel[0];
 		tableCells = new JTextArea[0][0];
@@ -206,6 +215,8 @@ public class TableView extends JPanel implements FocusListener,
 		}
 		
 		repositionContents();
+		revalidate();
+		repaint();
 	}
 	
 	private void addColumns(int c) {
@@ -379,8 +390,13 @@ public class TableView extends JPanel implements FocusListener,
 		int w = getWidth();
 		int h = getHeight();
 		
+		scrollView.setLocation(0, 23);
+		scrollView.setSize(w, h - 23);
+		
 		int c = tableHeaders.length;
 		int r = tableCells.length;
+		
+		if (c == 0) return;
 		
 		int[] columnXs = new int[c];
 		int[] columnWidths = new int[c];
@@ -406,9 +422,6 @@ public class TableView extends JPanel implements FocusListener,
 			header.setLocation(columnXs[i], 0);
 			header.setSize(columnWidths[i], 22);
 		}
-		
-		scrollView.setLocation(0, 23);
-		scrollView.setSize(w, h - 23);
 		
 		if (selectedRow == -1) {
 			contentView.setPreferredSize(new Dimension(contentWidth, r * 23 - 1));
@@ -473,40 +486,19 @@ public class TableView extends JPanel implements FocusListener,
 		}
 	}
 	
-	public void keyTyped(KeyEvent e) {
-		if (e.getKeyCode() != KeyEvent.VK_ESCAPE && 
+	public void keyTyped(KeyEvent e) {}
+	
+	public void keyPressed(KeyEvent e) {
+		if ((e.getKeyCode() == KeyEvent.VK_ESCAPE || 
+			 e.getKeyCode() == KeyEvent.VK_ENTER) && 
+			(e.getModifiers() & KeyEvent.ALT_DOWN_MASK) != 0 && 
 			e.getSource() instanceof JTextArea) {
 			JFrame frame = (JFrame) SwingUtilities.getRoot(this);
-			
+				
 			if (frame != null) frame.requestFocusInWindow();
-			
-			return;
-		}
-		
-		if (e.getKeyCode() != KeyEvent.VK_ENTER || 
-		    (e.getModifiers() & KeyEvent.ALT_DOWN_MASK) != 0) {
-			return;
-		}
-		
-		int c = tableHeaders.length;
-		int r = tableCells.length;
-		
-		for (int i = 0; i < r; i++) {
-			for (int j = 0; j < c; j++) {
-				JTextArea cell = tableCells[i][j];
-				
-				if (cell != e.getSource()) continue;
-				
-				if (getDataSource() == null) {
-					reloadData();
-				}else{
-					getDataSource().setCellValue(this, j, i, cell.getText());
-				}
-			}
 		}
 	}
 	
-	public void keyPressed(KeyEvent e) {}
 	public void keyReleased(KeyEvent e) {}
 	
 	public void mouseClicked(MouseEvent e) {

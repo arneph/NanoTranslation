@@ -2,7 +2,6 @@ package ui;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.util.*;
 
 import javax.swing.*;
 import javax.swing.text.*;
@@ -16,6 +15,8 @@ public class DocumentWindow extends JFrame implements ActionListener,
 													  WindowListener {
 	private DocumentWindowDataSource dataSource;
 	private DocumentWindowDelegate delegate;
+	
+	private int selectedView;
 	
 	private JMenuBar menuBar;
 	private JMenu fileMenu;
@@ -32,23 +33,49 @@ public class DocumentWindow extends JFrame implements ActionListener,
 	private JMenuItem pasteMenuItem;
 	private JMenuItem findMenuItem;
 	private JMenuItem replaceMenuItem;
+	private JMenu viewMenu;
+	private JCheckBoxMenuItem generalViewMenuItem;
+	private JCheckBoxMenuItem translationsViewMenuItem;
 	private JMenu windowMenu;
 	private JMenuItem minimizeMenuItem;
 	private JMenuItem zoomMenuItem;
 	private JMenu helpMenu;
 	private JMenuItem helpMenuItem;
 	
-	private int selectedLanguageIndex;
+	private JButton generalButton;
+	private JButton translationsButton;
 	
-	private JScrollPane languagesScrollPane;
-	private JPanel languagesContentPane;
-	private JPanel[] languagePanels;
-	private JCheckBox[] languageCheckBoxes;
-	private JTextField[] languageLabels;
+	private JPanel generalPanel;
+	private JLabel projectFolderLabel;
+	private JTextField projectFolderField;
+	private JLabel languageFileLabel;
+	private JTextField languageFileField;
+	private JLabel languagesLabel;
+	private ListView languagesListView;
 	private JButton addLanguageButton;
 	private JButton removeLanguageButton;
 	
+	private JPanel translationsPanel;
+	
+	private ListView languageSelectionListView;
+	private TableView entriesTableView;
+	private JButton addEntryButton;
+	private JButton removeEntryButton;
+	
 	public DocumentWindow() {
+		dataSource = null;
+		delegate = null;
+		
+		selectedView = 0;
+		
+		setIconImage(Icons.appIcon().getImage());
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		setLayout(null);
+		setMinimumSize(new Dimension(640, 360));
+		setLocationRelativeTo(null);
+		
+		getContentPane().setBackground(Color.white);
+		
 		int modifiers = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 		
 		menuBar = new JMenuBar();
@@ -122,6 +149,21 @@ public class DocumentWindow extends JFrame implements ActionListener,
 		editMenu.add(findMenuItem);
 		editMenu.add(replaceMenuItem);
 		
+		viewMenu = new JMenu("View");
+		
+		generalViewMenuItem = new JCheckBoxMenuItem("General");
+		generalViewMenuItem.setAccelerator(KeyStroke.getKeyStroke('1', modifiers));
+		generalViewMenuItem.setState(true);
+		generalViewMenuItem.addActionListener(this);
+		
+		translationsViewMenuItem = new JCheckBoxMenuItem("Translations");
+		translationsViewMenuItem.setAccelerator(KeyStroke.getKeyStroke('2', modifiers));
+		translationsViewMenuItem.setState(false);
+		translationsViewMenuItem.addActionListener(this);
+		
+		viewMenu.add(generalViewMenuItem);
+		viewMenu.add(translationsViewMenuItem);
+		
 		windowMenu = new JMenu("Window");
 		
 		minimizeMenuItem = new JMenuItem("Minimize");
@@ -135,7 +177,6 @@ public class DocumentWindow extends JFrame implements ActionListener,
 		windowMenu.add(zoomMenuItem);
 		
 		helpMenu = new JMenu("Help");
-		
 		helpMenuItem = new JMenuItem("NanoTranslation Help");
 		helpMenuItem.setAccelerator(KeyStroke.getKeyStroke('/', modifiers | InputEvent.SHIFT_DOWN_MASK));
 		helpMenuItem.addActionListener(this);
@@ -144,53 +185,110 @@ public class DocumentWindow extends JFrame implements ActionListener,
 		
 		menuBar.add(fileMenu);
 		menuBar.add(editMenu);
+		menuBar.add(viewMenu);
 		menuBar.add(windowMenu);
 		menuBar.add(helpMenu);
 		
-		selectedLanguageIndex = -1;
+		setJMenuBar(menuBar);
 		
-		languagesScrollPane = new JScrollPane();
-		languagesScrollPane.setBackground(Color.white);
-		languagesScrollPane.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 1, Color.lightGray));
-		languagesScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		languagesScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		generalButton = new JButton("General");
+		generalButton.setOpaque(true);
+		generalButton.setBackground(Color.lightGray);
+		generalButton.setForeground(Color.black);
+		generalButton.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 1, Color.lightGray));
+		generalButton.addActionListener(this);
 		
-		languagesContentPane = new JPanel();
-		languagesContentPane.setBackground(Color.white);
-		languagesContentPane.setLayout(null);
-		languagesContentPane.addMouseListener(this);
+		translationsButton = new JButton("Translations");
+		translationsButton.setOpaque(true);
+		translationsButton.setBackground(Color.white);
+		translationsButton.setForeground(Color.black);
+		translationsButton.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 1, Color.lightGray));
+		translationsButton.addActionListener(this);
 		
-		languagePanels = new JPanel[0];
-		languageCheckBoxes = new JCheckBox[0];
-		languageLabels = new JTextField[0];
+		generalPanel = new JPanel();
+		generalPanel.setBackground(Color.white);
+		generalPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.lightGray));
+		generalPanel.setLayout(null);
 		
-		languagesScrollPane.setViewportView(languagesContentPane);
+		projectFolderLabel = new JLabel("Project Folder:");
+		projectFolderLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 		
-		addLanguageButton = new JButton("Add");
+		projectFolderField = new JTextField();
+		projectFolderField.setBorder(BorderFactory.createLineBorder(Color.lightGray, 1));
+		projectFolderField.addFocusListener(this);
+		projectFolderField.addKeyListener(this);
+		
+		languageFileLabel = new JLabel("Language File:");
+		languageFileLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		
+		languageFileField = new JTextField();
+		languageFileField.setBorder(BorderFactory.createLineBorder(Color.lightGray, 1));
+		languageFileField.addFocusListener(this);
+		languageFileField.addKeyListener(this);
+		
+		languagesLabel = new JLabel("Languages:");
+		languagesLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		
+		languagesListView = new ListView();
+		
+		addLanguageButton = new JButton("+");
 		addLanguageButton.setOpaque(true);
 		addLanguageButton.setBackground(Color.white);
 		addLanguageButton.setForeground(Color.black);
-		addLanguageButton.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.lightGray));
+		addLanguageButton.setBorder(BorderFactory.createLineBorder(Color.lightGray, 1));
 		addLanguageButton.addActionListener(this);
 		
-		removeLanguageButton = new JButton("Remove");
+		removeLanguageButton = new JButton("-");
 		removeLanguageButton.setOpaque(true);
 		removeLanguageButton.setBackground(Color.white);
 		removeLanguageButton.setForeground(Color.black);
-		removeLanguageButton.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.lightGray));
+		removeLanguageButton.setBorder(BorderFactory.createLineBorder(Color.lightGray, 1));
 		removeLanguageButton.setEnabled(false);
 		removeLanguageButton.addActionListener(this);
 		
-		setIconImage(Icons.appIcon().getImage());
-		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		setJMenuBar(menuBar);
-		setLayout(null);
-		setMinimumSize(new Dimension(640, 360));
-		setLocationRelativeTo(null);
+		generalPanel.add(projectFolderLabel);
+		generalPanel.add(projectFolderField);
+		generalPanel.add(languageFileLabel);
+		generalPanel.add(languageFileField);
+		generalPanel.add(languagesLabel);
+		generalPanel.add(languagesListView);
+		generalPanel.add(addLanguageButton);
+		generalPanel.add(removeLanguageButton);
 		
-		add(languagesScrollPane);
-		add(addLanguageButton);
-		add(removeLanguageButton);
+		translationsPanel = new JPanel();
+		translationsPanel.setBackground(Color.white);
+		translationsPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.lightGray));
+		translationsPanel.setVisible(false);
+		translationsPanel.setLayout(null);
+		
+		languageSelectionListView = new ListView();
+		
+		entriesTableView = new TableView();
+		
+		addEntryButton = new JButton("+");
+		addEntryButton.setOpaque(true);
+		addEntryButton.setBackground(Color.white);
+		addEntryButton.setForeground(Color.black);
+		addEntryButton.setBorder(BorderFactory.createLineBorder(Color.lightGray, 1));
+		addEntryButton.addActionListener(this);
+		
+		removeEntryButton = new JButton("-");
+		removeEntryButton.setOpaque(true);
+		removeEntryButton.setBackground(Color.white);
+		removeEntryButton.setForeground(Color.black);
+		removeEntryButton.setBorder(BorderFactory.createLineBorder(Color.lightGray, 1));
+		removeEntryButton.setEnabled(false);
+		removeEntryButton.addActionListener(this);
+		
+		translationsPanel.add(languageSelectionListView);
+		translationsPanel.add(entriesTableView);
+		translationsPanel.add(addEntryButton);
+		translationsPanel.add(removeEntryButton);
+		
+		add(generalButton);
+		add(translationsButton);
+		add(generalPanel);
+		add(translationsPanel);
 		
 		addComponentListener(this);
 		addHierarchyBoundsListener(this);
@@ -219,168 +317,117 @@ public class DocumentWindow extends JFrame implements ActionListener,
 	}
 	
 	//Public Methods:
-	public void reloadData() {
-		reloadTitle();
-		reloadLanguagesList();
+	public int getSelectedView() {
+		return selectedView;
 	}
 	
-	public void reloadTitle() {
-		String title = (getDataSource() != null) ? getDataSource().getTitle(this) : null;
+	public void setSelectedView(int selectedView) {
+		if (selectedView < 0 || selectedView > 1) {
+			return;
+		}
+		
+		this.selectedView = selectedView;
+		
+		if (selectedView == 0) {
+			generalViewMenuItem.setState(true);
+			translationsViewMenuItem.setState(false);
+			
+			generalButton.setBackground(Color.lightGray);
+			translationsButton.setBackground(Color.white);
+			
+			generalPanel.setVisible(true);
+			translationsPanel.setVisible(false);
+			
+		}else if (selectedView == 1){
+			generalViewMenuItem.setState(false);
+			translationsViewMenuItem.setState(true);
+			
+			generalButton.setBackground(Color.white);
+			translationsButton.setBackground(Color.lightGray);
+			
+			generalPanel.setVisible(false);
+			translationsPanel.setVisible(true);
+		}
+	}
+	
+	public void reloadData() {
+		String title = (getDataSource() != null) ? getDataSource().getTitle(this) : "";
+		String projectFolder = (getDataSource() != null) ? getDataSource().getProjectFolder(this) : "";
+		String languageFile = (getDataSource() != null) ? getDataSource().getLanguageFile(this) : "";
+		boolean canRemoveLanguage = (getDelegate() != null) ? getDelegate().canRemoveLanguage(this) : false;
 		
 		setTitle(title);
+		
+		projectFolderField.setText(projectFolder);
+		languageFileField.setText(languageFile);
+		
+		removeLanguageButton.setEnabled(canRemoveLanguage);
 	}
 	
-	public void reloadLanguagesList() {
-		int nLanguages = (getDataSource() != null) ? getDataSource().getNumberOfLanguages(this) : 0;
-		
-		setNumberOfRowsInLanguagesList(nLanguages);
-		
-		for (int i = 0; i < nLanguages; i++) {
-			boolean active = getDataSource().isLanguageAtIndexActivated(this, i);
-			String language = getDataSource().getLanguageAtIndex(this, i);
-			
-			JCheckBox checkBox = languageCheckBoxes[i];
-			JTextField label = languageLabels[i];
-			
-			checkBox.setSelected(active);
-			label.setText(language);
-		}
-		
-		updateLanguagesListPositioning();
+	public ListView getLanguagesListView() {
+		return languagesListView;
 	}
 	
-	public int getIndexOfSelectedLanguage() {
-		return selectedLanguageIndex;
+	public ListView getLanguageSelectionListView() {
+		return languageSelectionListView;
 	}
 	
-	public void setIndexOfSelectedLanguage(int index) {
-		if (index < -1 || index >= languagePanels.length) {
-			throw new IllegalArgumentException();
-		}
-		
-		if (selectedLanguageIndex != -1) {
-			JPanel panel = languagePanels[selectedLanguageIndex];
-			
-			panel.setBackground(Color.white);
-		}
-		
-		selectedLanguageIndex = index;
-		
-		if (selectedLanguageIndex != -1) {
-			JPanel panel = languagePanels[selectedLanguageIndex];
-			
-			panel.setBackground(Color.lightGray);
-		}
-		
-		removeLanguageButton.setEnabled(selectedLanguageIndex != -1);
-	}
-	
-	//Languages list handling:
-	private void setNumberOfRowsInLanguagesList(int n) {
-		int m = languagePanels.length;
-		
-		if (m < n) {
-			languagePanels = Arrays.copyOf(languagePanels, n);
-			languageCheckBoxes = Arrays.copyOf(languageCheckBoxes, n);
-			languageLabels = Arrays.copyOf(languageLabels, n);
-			
-			for (int i = m; i < n; i++) {
-				JPanel panel = new JPanel();
-				
-				panel.setBackground(Color.white);
-				panel.setBorder(null);
-				panel.setLayout(null);
-				panel.addMouseListener(this);
-				
-				JCheckBox checkBox = new JCheckBox();
-				
-				checkBox.setIcon(Icons.uncheckedIcon());
-				checkBox.setSelectedIcon(Icons.checkecIcon());
-				checkBox.setBorder(null);
-				checkBox.addActionListener(this);
-				
-				JTextField label = new JTextField();
-				
-				label.setOpaque(false);
-				label.setBackground(null);
-				label.setForeground(Color.black);
-				label.setBorder(null);
-				label.addFocusListener(this);
-				label.addKeyListener(this);
-				
-				panel.add(checkBox);
-				panel.add(label);
-				
-				languagesContentPane.add(panel);
-				
-				languagePanels[i] = panel;
-				languageCheckBoxes[i] = checkBox;
-				languageLabels[i] = label;
-			}
-			
-		}else if (m > n) {
-			for (int i = n; i < m; i++) {
-				JPanel panel = languagePanels[i];
-				
-				languagesContentPane.remove(panel);
-				panel.removeAll();
-			}
-			
-			languagePanels = Arrays.copyOf(languagePanels, n);
-			languageCheckBoxes = Arrays.copyOf(languageCheckBoxes, n);
-			languageLabels = Arrays.copyOf(languageLabels, n);
-			
-			if (selectedLanguageIndex >= n) {
-				selectedLanguageIndex = -1;
-			}
-		}
+	public TableView getEntriesTableView() {
+		return entriesTableView;
 	}
 	
 	//Positioning:
 	private void updatePositioning() {
-		//int w = getContentPane().getWidth();
+		int w = getContentPane().getWidth();
 		int h = getContentPane().getHeight();
 		
-		languagesScrollPane.setLocation(0, 0);
-		languagesScrollPane.setSize(160, h - 25);
+		generalButton.setLocation(0, 0);
+		generalButton.setSize(100, 30);
 		
-		updateLanguagesListPositioning();
+		translationsButton.setLocation(100, 0);
+		translationsButton.setSize(100, 30);
 		
-		addLanguageButton.setLocation(0, h - 25);
-		addLanguageButton.setSize(80, 25);
+		generalPanel.setLocation(0, 29);
+		generalPanel.setSize(w, h - 29);
 		
-		removeLanguageButton.setLocation(80, h - 25);
-		removeLanguageButton.setSize(80, 25);
+		projectFolderLabel.setLocation(12, 12);
+		projectFolderLabel.setSize(100, 25);
 		
-		revalidate();
-		repaint();
-	}
-	
-	private void updateLanguagesListPositioning() {
-		int nLanguages = languagePanels.length;
+		projectFolderField.setLocation(118, 12);
+		projectFolderField.setSize(300, 25);
 		
-		languagesContentPane.setPreferredSize(new Dimension(160, Math.max(languagesScrollPane.getHeight() - 1, 
-		                                                                  nLanguages * 22)));
+		languageFileLabel.setLocation(12, 43);
+		languageFileLabel.setSize(100, 25);
 		
-		for (int i = 0; i < nLanguages; i++) {
-			JPanel panel = languagePanels[i];
-			JCheckBox checkBox = languageCheckBoxes[i];
-			JTextField label = languageLabels[i];
-			
-			panel.setLocation(0, i * 22);
-			panel.setSize(160, 22);
-			
-			checkBox.setLocation(1, 1);
-			checkBox.setSize(20, 20);
-			
-			if (!label.isFocusOwner()) {
-				label.setLocation(22, 1);
-				label.setSize(Math.min(137, label.getPreferredSize().width), 20);
-			}else{
-				label.setLocation(22, 1);
-				label.setSize(137, 20);
-			}
-		}
+		languageFileField.setLocation(118, 43);
+		languageFileField.setSize(300, 25);
+		
+		languagesLabel.setLocation(12, 74);
+		languagesLabel.setSize(100, 25);
+		
+		languagesListView.setLocation(118, 74);
+		languagesListView.setSize(300, Math.min(150, h - 146));
+		
+		addLanguageButton.setLocation(359, Math.min(230, h - 68));
+		addLanguageButton.setSize(30, 25);
+		
+		removeLanguageButton.setLocation(388, Math.min(230, h - 68));
+		removeLanguageButton.setSize(30, 25);
+		
+		translationsPanel.setLocation(0, 29);
+		translationsPanel.setSize(w, h - 29);
+		
+		languageSelectionListView.setLocation(12, 12);
+		languageSelectionListView.setSize(150, h - 53);
+		
+		entriesTableView.setLocation(172, 12);
+		entriesTableView.setSize(w - 184, h - 84);
+		
+		addEntryButton.setLocation(w - 71, h - 66);
+		addEntryButton.setSize(30, 25);
+		
+		removeEntryButton.setLocation(w - 42, h - 66);
+		removeEntryButton.setSize(30, 25);
 		
 		revalidate();
 		repaint();
@@ -427,6 +474,12 @@ public class DocumentWindow extends JFrame implements ActionListener,
 			
 		}else if (e.getSource() == replaceMenuItem) {
 			
+		}else if (e.getSource() == generalViewMenuItem) {
+			setSelectedView(0);
+			
+		}else if (e.getSource() == translationsViewMenuItem) {
+			setSelectedView(1);
+			
 		}else if (e.getSource() == minimizeMenuItem) {
 			setState(JFrame.ICONIFIED);
 			
@@ -440,6 +493,12 @@ public class DocumentWindow extends JFrame implements ActionListener,
 			
 		}else if (e.getSource() == helpMenuItem) {
 			
+		}else if (e.getSource() == generalButton) {
+			setSelectedView(0);
+			
+		}else if (e.getSource() == translationsButton) {
+			setSelectedView(1);
+			
 		}else if (e.getSource() == addLanguageButton) {
 			if (getDataSource() != null) {
 				getDataSource().addLanguage(this);
@@ -450,20 +509,6 @@ public class DocumentWindow extends JFrame implements ActionListener,
 				getDataSource().removeLanguage(this);
 			}
 			
-		}else{
-			for (int i = 0; i < languagePanels.length; i++) {
-				if (e.getSource() == languageCheckBoxes[i]) {
-					setIndexOfSelectedLanguage(i);
-					
-					if (getDataSource() == null) {
-						reloadLanguagesList();
-					}else{
-						getDataSource().setLanguageAtIndexActivated(this, i, languageCheckBoxes[i].isSelected());
-					}
-					
-					return;
-				}
-			}
 		}
 	}
 	
@@ -477,36 +522,14 @@ public class DocumentWindow extends JFrame implements ActionListener,
 	public void componentMoved(ComponentEvent e) {}
 	public void componentShown(ComponentEvent e) {}
 	public void componentHidden(ComponentEvent e) {}
-
+	
 	//FocusListener:
 	public void focusGained(FocusEvent e) {
-		for (int i = 0; i < languagePanels.length; i++) {
-			if (e.getSource() == languageLabels[i]) {
-				languageLabels[i].setSize(137, 20);
-				
-				setIndexOfSelectedLanguage(i);
-				
-				return;
-			}
-		}
+		
 	}
 	
 	public void focusLost(FocusEvent e) {
-		for (int i = 0; i < languagePanels.length; i++) {
-			if (e.getSource() == languageLabels[i]) {
-				JTextField label = languageLabels[i];
-				
-				label.setSize(Math.min(137, label.getPreferredSize().width), 20);
-				
-				if (getDataSource() == null) {
-					reloadLanguagesList();
-				}else{
-					getDataSource().setLanguageAtIndex(this, i, label.getText());
-				}
-				
-				return;
-			}
-		}
+		
 	}
 
 	//HierarchyBoundsListner:
@@ -532,20 +555,7 @@ public class DocumentWindow extends JFrame implements ActionListener,
 	
 	//MouseListener:
 	public void mouseClicked(MouseEvent e) {
-		if (e.getSource() == languagesContentPane) {
-			setIndexOfSelectedLanguage(-1);
-			
-			requestFocusInWindow();
-			
-		}else{
-			for (int i = 0; i < languagePanels.length; i++) {
-				if (e.getSource() == languagePanels[i]) {
-					setIndexOfSelectedLanguage(i);
-					
-					return;
-				}
-			}
-		}
+		
 	}
 	
 	public void mousePressed(MouseEvent e) {}
@@ -575,22 +585,18 @@ public class DocumentWindow extends JFrame implements ActionListener,
 		
 		public String getTitle(DocumentWindow window);
 		
-		public int getNumberOfLanguages(DocumentWindow window);
-		public boolean isLanguageAtIndexActivated(DocumentWindow window, int index);
-		public String getLanguageAtIndex(DocumentWindow window, int index);
+		public String getProjectFolder(DocumentWindow window);
+		public void setProjectFolder(DocumentWindow window, String projectFolder);
 		
-		public void setLanguageAtIndexActivated(DocumentWindow window, int index, boolean activated);
-		public void setLanguageAtIndex(DocumentWindow window, int index, String language);
+		public String getLanguageFile(DocumentWindow window);
+		public void setLanguageFile(DocumentWindow window, String languageFile);
 		
 		public void addLanguage(DocumentWindow window);
 		public void removeLanguage(DocumentWindow window);
-		/*
-		public int getNumberOfEntries(DocumentWindow window);
-		public int getNumberOfDisplayedLanguaged(DocumentWindow window);
-		public String getDisplayLanguageAtIndex(DocumentWindow window, int index);
-		public String getKeyOfEntryAtIndex(DocumentWindow window, int index);
-		public String getTranslationForLanguageOfEntryAtIndex(DocumentWindow window, int entryIndex, int languageIndex);
-		*/
+		
+		public void addEntry(DocumentWindow window);
+		public void removeEntry(DocumentWindow window);
+		
 	}
 	
 	public interface DocumentWindowDelegate {
@@ -607,6 +613,9 @@ public class DocumentWindow extends JFrame implements ActionListener,
 		
 		public void pushedUndo(DocumentWindow window);
 		public void pushedRedo(DocumentWindow window);
+		
+		public boolean canRemoveLanguage(DocumentWindow window);
+		public boolean canRemoveEntry(DocumentWindow window);
 		
 	}
 	

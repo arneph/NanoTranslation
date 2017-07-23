@@ -11,9 +11,15 @@ import model.*;
 import nanoTranslation.*;
 
 import ui.DocumentWindow.*;
+import ui.ListView.*;
+import ui.TableView.*;
 
 public class DocumentWindowController implements DocumentWindowDataSource, 
-												 DocumentWindowDelegate {
+												 DocumentWindowDelegate, 
+												 ListViewDataSource, 
+												 ListViewDelegate, 
+												 TableViewDataSource, 
+												 TableViewDelegate {
 	private File file;
 	private Document originalDocument;
 	private Document document;
@@ -38,6 +44,15 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		window.setDataSource(this);
 		window.setDelegate(this);
 		
+		window.getLanguagesListView().setDataSource(this);
+		window.getLanguagesListView().setDelegate(this);
+		
+		window.getLanguageSelectionListView().setDataSource(this);
+		window.getLanguageSelectionListView().setDelegate(this);
+		
+		window.getEntriesTableView().setDataSource(this);
+		window.getEntriesTableView().setDelegate(this);
+		
 		window.setVisible(true);
 	}
 	
@@ -57,6 +72,9 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		window.setDataSource(this);
 		window.setDelegate(this);
 		
+		window.getLanguagesListView().setDataSource(this);
+		window.getLanguagesListView().setDelegate(this);
+		
 		window.setVisible(true);
 	}
 	
@@ -71,56 +89,24 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		return "NanoTranslation - " + name;
 	}
 	
-	public int getNumberOfLanguages(DocumentWindow window) {
-		return document.getTranslations().getNumberOfLanguages();
+	public String getProjectFolder(DocumentWindow window) {
+		return document.getProjectFolderPath();
 	}
 	
-	public boolean isLanguageAtIndexActivated(DocumentWindow window, int index) {
-		return activeLanguages.get(document.getTranslations().getLanguageAtIndex(index)).booleanValue();
-	}
-	
-	public String getLanguageAtIndex(DocumentWindow window, int index) {
-		return document.getTranslations().getLanguageAtIndex(index);
-	}
-	
-	public void setLanguageAtIndexActivated(DocumentWindow window, int index, boolean activated) {
-		activeLanguages.put(document.getTranslations().getLanguageAtIndex(index), new Boolean(activated));
+	public void setProjectFolder(DocumentWindow window, String projectFolder) {
+		document.setProjectFolderPath(projectFolder);
 		
 		window.reloadData();
 	}
 	
-	public void setLanguageAtIndex(DocumentWindow window, int index, String language) {
-		String oldLanguage = document.getTranslations().getLanguageAtIndex(index);
-		
-		if (oldLanguage.equals(language)) {
-			return;
-		}else if (language == null || language.equals("")) {
-			JOptionPane.showMessageDialog(window, 
-                                          "Empty names are not allowed.", 
-                                          "Error", 
-                                          JOptionPane.OK_OPTION, 
-                                          Icons.appIcon());
-			window.reloadData();
-			
-			return;
-			
-		}else if (document.getTranslations().getIndexOfLanguage(language) != -1) {
-			JOptionPane.showMessageDialog(window, 
-                                          "There is already a language with this name.", 
-                                          "Error", 
-                                          JOptionPane.OK_OPTION, 
-                                          Icons.appIcon());
-			window.reloadData();
-			
-			return;
-		}
-		
-		document.getTranslations().setLanguageAtIndex(index, language);
-		
-		activeLanguages.put(language, activeLanguages.remove(oldLanguage));
+	public String getLanguageFile(DocumentWindow window) {
+		return document.getLanguageFilePath();
+	}
+	
+	public void setLanguageFile(DocumentWindow window, String languageFile) {
+		document.setLanguageFilePath(languageFile);
 		
 		window.reloadData();
-		window.setIndexOfSelectedLanguage(document.getTranslations().getIndexOfLanguage(language));
 	}
 	
 	public void addLanguage(DocumentWindow window) {
@@ -172,12 +158,15 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		
 		activeLanguages.put(newLanguage, Boolean.TRUE);
 		
-		window.reloadData();
-		window.setIndexOfSelectedLanguage(document.getTranslations().getIndexOfLanguage(newLanguage));
+		window.getLanguagesListView().reloadData();
+		window.getLanguagesListView().setSelectedRow(document.getTranslations().getIndexOfLanguage(newLanguage));
+		
+		window.getLanguageSelectionListView().reloadData();
+		window.getEntriesTableView().reloadData();
 	}
 	
 	public void removeLanguage(DocumentWindow window) {
-		int index = window.getIndexOfSelectedLanguage();
+		int index = window.getLanguagesListView().getSelectedRow();
 		
 		if (index == -1) {
 			return;
@@ -200,8 +189,75 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		
 		activeLanguages.remove(oldLanguage);
 		
-		window.reloadData();
-		window.setIndexOfSelectedLanguage(-1);
+		window.getLanguagesListView().reloadData();
+		window.getLanguagesListView().setSelectedRow(-1);
+		
+		window.getLanguageSelectionListView().reloadData();
+		window.getEntriesTableView().reloadData();
+	}
+	
+	public void addEntry(DocumentWindow window) {
+		String newKey = null;
+		
+		while (newKey == null) {
+			newKey = (String) JOptionPane.showInputDialog(window, 
+			                                                "New key:", 
+			                                                "", 
+			                                                JOptionPane.QUESTION_MESSAGE, 
+			                                                Icons.appIcon(), 
+			                                                null, 
+			                                                null);
+			
+			if (newKey == null) {
+				return;
+				
+			}else if (newKey.equals("")) {
+				int result = JOptionPane.showConfirmDialog(window, 
+				                                           "Empty keys are not allowed.", 
+				                                           "Naming Error", 
+				                                           JOptionPane.OK_CANCEL_OPTION, 
+				                                           JOptionPane.ERROR_MESSAGE, 
+				                                           Icons.appIcon());
+				
+				if (result == JOptionPane.CANCEL_OPTION) {
+					return;
+				}else{
+					newKey = null;
+				}
+				
+			}else if (document.getTranslations().getIndexOfLanguage(newKey) != -1) {
+				int result = JOptionPane.showConfirmDialog(window, 
+				                                           "There is already a key with this name.", 
+				                                           "Naming Error", 
+				                                           JOptionPane.OK_CANCEL_OPTION, 
+				                                           JOptionPane.ERROR_MESSAGE, 
+				                                           Icons.appIcon());
+				
+				if (result == JOptionPane.CANCEL_OPTION) {
+					return;
+				}else{
+					newKey = null;
+				}
+			}
+		}
+		
+		document.getTranslations().addEntry(newKey);
+		
+		window.getEntriesTableView().reloadData();
+		window.getEntriesTableView().setSelectedCell(0, document.getTranslations().getIndexOfKeyOfEntry(newKey));
+	}
+	
+	public void removeEntry(DocumentWindow window) {
+		int index = window.getEntriesTableView().getSelectedRow();
+		
+		if (index == -1) {
+			return;
+		}
+		
+		document.getTranslations().removeEntry(index);
+		
+		window.getEntriesTableView().reloadData();
+		window.getEntriesTableView().setSelectedCell(-1, -1);
 	}
 	
 	public void pushedNew(DocumentWindow window) {
@@ -347,6 +403,212 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 	
 	public void pushedRedo(DocumentWindow window) {
 		
+	}
+	
+	public boolean canRemoveLanguage(DocumentWindow window) {
+		return window.getLanguagesListView().getSelectedRow() != -1;
+	}
+	
+	public boolean canRemoveEntry(DocumentWindow window) {
+		return window.getEntriesTableView().getSelectedRow() != -1;
+	}
+	
+	//ListView DataSource & Delegate:
+	public int getNumberOfRows(ListView listView) {
+		if (listView == window.getLanguagesListView()) {
+			return document.getTranslations().getNumberOfLanguages();
+			
+		}else if (listView == window.getLanguageSelectionListView()) {
+			return document.getTranslations().getNumberOfLanguages();
+			
+		}else{
+			return 0;
+		}
+	}
+	
+	public boolean isRowChecked(ListView listView, int index) {
+		if (listView == window.getLanguagesListView()) {
+			return false;
+			
+		}else if (listView == window.getLanguageSelectionListView()) {
+			return activeLanguages.get(document.getTranslations().getLanguageAtIndex(index));
+			
+		}else{
+			return false;
+		}
+	}
+	
+	public void setRowChecked(ListView listView, int index, boolean checked) {
+		if (listView == window.getLanguageSelectionListView()) {
+			activeLanguages.put(document.getTranslations().getLanguageAtIndex(index), checked);
+			
+			window.getLanguageSelectionListView().reloadData();
+			window.getEntriesTableView().reloadData();
+		}
+	}
+	
+	public String getRowValue(ListView listView, int index) {
+		if (listView == window.getLanguagesListView()) {
+			return document.getTranslations().getLanguageAtIndex(index);
+			
+		}else if (listView == window.getLanguageSelectionListView()) {
+			return document.getTranslations().getLanguageAtIndex(index);
+			
+		}else{
+			return "";
+		}
+	}
+	
+	public void setRowValue(ListView listView, int index, String value) {
+		if (listView == window.getLanguagesListView()) {
+			String newLanguage = value;
+			String oldLanguage = document.getTranslations().getLanguageAtIndex(index);
+			
+			if (oldLanguage.equals(newLanguage)) {
+				return;
+			}else if (newLanguage == null || newLanguage.equals("")) {
+				JOptionPane.showMessageDialog(window, 
+	                                          "Empty names are not allowed.", 
+	                                          "Error", 
+	                                          JOptionPane.OK_OPTION, 
+	                                          Icons.appIcon());
+				window.reloadData();
+				
+				return;
+				
+			}else if (document.getTranslations().getIndexOfLanguage(newLanguage) != -1) {
+				JOptionPane.showMessageDialog(window, 
+	                                          "There is already a language with this name.", 
+	                                          "Error", 
+	                                          JOptionPane.OK_OPTION, 
+	                                          Icons.appIcon());
+				window.reloadData();
+				
+				return;
+			}
+			
+			document.getTranslations().setLanguageAtIndex(index, newLanguage);
+			
+			activeLanguages.put(newLanguage, activeLanguages.remove(oldLanguage));
+			
+			window.getLanguagesListView().reloadData();
+			window.getLanguagesListView().setSelectedRow(document.getTranslations().getIndexOfLanguage(newLanguage));
+			
+			window.getLanguageSelectionListView().reloadData();
+			window.getEntriesTableView().reloadData();
+		}
+	}
+	
+	public boolean shouldShowCheckBoxes(ListView listView) {
+		if (listView == window.getLanguagesListView()) {
+			return false;
+			
+		}else if (listView == window.getLanguageSelectionListView()) {
+			return true;
+			
+		}else{
+			return false;
+		}
+	}
+	
+	public boolean shouldAllowSelection(ListView listView) {
+		if (listView == window.getLanguagesListView()) {
+			return true;
+			
+		}else if (listView == window.getLanguageSelectionListView()) {
+			return false;
+			
+		}else{
+			return true;
+		}
+	}
+	
+	public boolean shouldAllowEditing(ListView listView) {
+		if (listView == window.getLanguagesListView()) {
+			return true;
+			
+		}else if (listView == window.getLanguageSelectionListView()) {
+			return false;
+			
+		}else{
+			return true;
+		}
+	}
+	
+	public void selectionChanged(ListView listView) {
+		window.reloadData();
+	}
+	
+	public int getNumberOfColumns(TableView tableView) {
+		if (tableView == window.getEntriesTableView()) {
+			return 2 + document.getTranslations().getNumberOfLanguages();
+			
+		}else{
+			return 0;
+		}
+	}
+	
+	public int getNumberOfRows(TableView tableView) {
+		if (tableView == window.getEntriesTableView()) {
+			return document.getTranslations().getNumberOfEntries();
+			
+		}else{
+			return 0;
+		}
+	}
+	
+	public String getColumnTitle(TableView tableView, int columnIndex) {
+		if (tableView == window.getEntriesTableView()) {
+			if (columnIndex == 0) {
+				return "Key";
+				
+			}else if (columnIndex <= document.getTranslations().getNumberOfLanguages()) {
+				return document.getTranslations().getLanguageAtIndex(columnIndex - 1);
+			
+			}else{
+				return "Information";
+			}
+			
+		}else{
+			return null;
+		}
+	}
+	
+	public String getCellValue(TableView tableView, int columnIndex, int rowIndex) {
+		if (tableView == window.getEntriesTableView()) {
+			if (columnIndex == 0) {
+				return document.getTranslations().getKeyOfEntryAtIndex(rowIndex);
+				
+			}else if (columnIndex <= document.getTranslations().getNumberOfLanguages()) {
+				return document.getTranslations().getTranslationForLanguageOfEntryAtIndex(rowIndex, columnIndex);
+				
+			}else{
+				return document.getTranslations().getInformationOfEntryAtIndex(rowIndex);
+			}
+			
+		}else{
+			return null;
+		}
+	}
+	
+	public void setCellValue(TableView tableView, int columnIndex, int rowIndex, String value) {
+		if (tableView == window.getEntriesTableView()) {
+			if (columnIndex == 0) {
+				document.getTranslations().setKeyOfEntryAtIndex(rowIndex, value);
+				
+			}else if (columnIndex <= document.getTranslations().getNumberOfLanguages()) {
+				document.getTranslations().setTranslationForLanguageOfEntryAtIndex(rowIndex, columnIndex, value);
+				
+			}else{
+				document.getTranslations().setInformationOfEntryAtIndex(rowIndex, value);
+			}
+			
+			window.getEntriesTableView().reloadData();
+		}
+	}
+	
+	public void selectionChanged(TableView tableView) {
+		window.reloadData();
 	}
 	
 }
