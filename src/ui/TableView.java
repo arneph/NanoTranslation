@@ -6,8 +6,6 @@ import java.util.*;
 
 import javax.swing.*;
 
-import com.sun.corba.se.impl.oa.poa.ActiveObjectMap.Key;
-
 public class TableView extends JPanel implements FocusListener, 
 												 KeyListener, 
 												 MouseListener {
@@ -121,6 +119,11 @@ public class TableView extends JPanel implements FocusListener,
 			throw new IllegalArgumentException();
 		}
 		
+		if (selectedColumn == columnIndex && 
+			selectedRow == rowIndex) {
+			return;
+		}
+		
 		if (selectedColumn != -1 && 
 			selectedRow != -1) {
 			JLabel header = tableHeaders[selectedColumn];
@@ -164,6 +167,7 @@ public class TableView extends JPanel implements FocusListener,
 			JTextArea cell = tableCells[selectedRow][selectedColumn];
 			
 			cell.requestFocusInWindow();
+			cell.scrollRectToVisible(new Rectangle(0, 0, cell.getWidth(), cell.getHeight()));
 		}
 		
 		repositionContents();
