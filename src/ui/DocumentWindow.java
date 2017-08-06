@@ -509,6 +509,15 @@ public class DocumentWindow extends JFrame implements ActionListener,
 				getDataSource().removeLanguage(this);
 			}
 			
+		}else if (e.getSource() == addEntryButton) {
+			if (getDataSource() != null) {
+				getDataSource().addEntry(this);
+			}
+			
+		}else if (e.getSource() == removeEntryButton) {
+			if (getDataSource() != null) {
+				getDataSource().removeEntry(this);
+			}
 		}
 	}
 	
