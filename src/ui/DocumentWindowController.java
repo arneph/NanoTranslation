@@ -227,7 +227,7 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 					newKey = null;
 				}
 				
-			}else if (document.getTranslations().getIndexOfLanguage(newKey) != -1) {
+			}else if (document.getTranslations().getIndexOfKeyOfEntry(newKey) != -1) {
 				int result = JOptionPane.showConfirmDialog(window, 
 				                                           "There is already a key with this name.", 
 				                                           "Naming Error", 
@@ -585,7 +585,7 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 				return document.getTranslations().getKeyOfEntryAtIndex(rowIndex);
 				
 			}else if (columnIndex <= document.getTranslations().getNumberOfLanguages()) {
-				return document.getTranslations().getTranslationForLanguageOfEntryAtIndex(rowIndex, columnIndex);
+				return document.getTranslations().getTranslationForLanguageOfEntryAtIndex(rowIndex, columnIndex - 1);
 				
 			}else{
 				return document.getTranslations().getInformationOfEntryAtIndex(rowIndex);

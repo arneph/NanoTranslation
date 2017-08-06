@@ -123,16 +123,20 @@ public class TableView extends JPanel implements FocusListener,
 			selectedRow != -1) {
 			JLabel header = tableHeaders[selectedColumn];
 			
-			header.setForeground(Color.gray);
+			header.setFont(header.getFont().deriveFont(Font.PLAIN));
 			
 			JPanel row = tableRows[selectedRow];
 			
-			row.setBackground(null);
+			row.setBackground(Color.white);
 			
 			for (int i = 0; i < c; i++) {
 				JTextArea cell = tableCells[selectedRow][i];
 				
 				cell.setForeground(Color.gray);
+				
+				if (cell.isFocusOwner()) {
+					requestFocusInWindow();
+				}
 			}
 		}
 		
@@ -143,11 +147,11 @@ public class TableView extends JPanel implements FocusListener,
 			selectedRow != -1) {
 			JLabel header = tableHeaders[selectedColumn];
 			
-			header.setForeground(Color.black);
+			header.setFont(header.getFont().deriveFont(Font.BOLD));
 			
 			JPanel row = tableRows[selectedRow];
 			
-			row.setBackground(Color.lightGray);
+			row.setBackground(new Color(223, 223, 223));
 			
 			for (int i = 0; i < c; i++) {
 				JTextArea cell = tableCells[selectedRow][i];
@@ -201,9 +205,9 @@ public class TableView extends JPanel implements FocusListener,
 			JLabel header = tableHeaders[i];
 			
 			if (selectedColumn != i) {
-				header.setForeground(Color.gray);
+				header.setFont(header.getFont().deriveFont(Font.PLAIN));
 			}else{
-				header.setForeground(Color.black);
+				header.setFont(header.getFont().deriveFont(Font.BOLD));
 			}
 			
 			header.setText(columnTitle);
@@ -213,9 +217,9 @@ public class TableView extends JPanel implements FocusListener,
 			JPanel row = tableRows[i];
 			
 			if (selectedRow != i) {
-				row.setBackground(null);
+				row.setBackground(Color.white);
 			}else{
-				row.setBackground(Color.lightGray);
+				row.setBackground(new Color(223, 223, 223));
 			}
 			
 			for (int j = 0; j < c; j++) {
@@ -352,7 +356,7 @@ public class TableView extends JPanel implements FocusListener,
 			JLabel header = new JLabel();
 			
 			header.setBackground(null);
-			header.setForeground(Color.gray);
+			header.setForeground(Color.black);
 			
 			return header;
 		}
@@ -366,7 +370,7 @@ public class TableView extends JPanel implements FocusListener,
 		}else{
 			JPanel row = new JPanel();
 			
-			row.setBackground(null);
+			row.setBackground(Color.white);
 			row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.lightGray));
 			row.setLayout(null);
 			
@@ -453,7 +457,7 @@ public class TableView extends JPanel implements FocusListener,
 			JPanel row = tableRows[i];
 			
 			int rowY = (i == 0) ? 0 : tableRows[i - 1].getY() + tableRows[i - 1].getHeight();
-			int rowH = (selectedRow != i) ? 23 : 67;
+			int rowH = (selectedRow != i) ? 18 :54;
 			
 			row.setLocation(0, rowY);
 			row.setSize(contentWidth, rowH);
@@ -461,7 +465,7 @@ public class TableView extends JPanel implements FocusListener,
 			for (int j = 0; j < c; j++) {
 				JTextArea cell = tableCells[i][j];
 				
-				cell.setLocation(columnXs[j], rowY);
+				cell.setLocation(columnXs[j], 0);
 				cell.setSize(columnWidths[j], rowH - 1);
 			}
 		}
