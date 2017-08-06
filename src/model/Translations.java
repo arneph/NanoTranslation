@@ -125,7 +125,8 @@ public class Translations {
 	}
 	
 	public int getIndexOfKeyOfEntry(String key) {
-		if (key == null || key.equals("")) {
+		if (key == null || key.equals("") || 
+			entries.length == 0) {
 			return -1;
 		}
 		
