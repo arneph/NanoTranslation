@@ -140,7 +140,7 @@ public class ListView extends JPanel implements ActionListener,
 			checkBox.setSelected(checked);
 			checkBox.setVisible(showCheckBoxes);
 			cell.setText(cellValue);
-			cell.setEnabled(allowEditing);
+			cell.setEditable(allowEditing);
 		}
 		
 		repositionContents();
