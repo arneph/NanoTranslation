@@ -6,6 +6,8 @@ import java.util.*;
 
 import javax.swing.*;
 
+import com.sun.corba.se.impl.oa.poa.ActiveObjectMap.Key;
+
 public class TableView extends JPanel implements FocusListener, 
 												 KeyListener, 
 												 MouseListener {
@@ -457,7 +459,7 @@ public class TableView extends JPanel implements FocusListener,
 			JPanel row = tableRows[i];
 			
 			int rowY = (i == 0) ? 0 : tableRows[i - 1].getY() + tableRows[i - 1].getHeight();
-			int rowH = (selectedRow != i) ? 18 :54;
+			int rowH = (selectedRow != i) ? 18 :80;
 			
 			row.setLocation(0, rowY);
 			row.setSize(contentWidth, rowH);
@@ -513,13 +515,36 @@ public class TableView extends JPanel implements FocusListener,
 	public void keyTyped(KeyEvent e) {}
 	
 	public void keyPressed(KeyEvent e) {
-		if ((e.getKeyCode() == KeyEvent.VK_ESCAPE || 
-			 e.getKeyCode() == KeyEvent.VK_ENTER) && 
-			(e.getModifiers() & KeyEvent.ALT_DOWN_MASK) != 0 && 
-			e.getSource() instanceof JTextArea) {
-			JFrame frame = (JFrame) SwingUtilities.getRoot(this);
+		int c = tableHeaders.length;
+		int r = tableCells.length;
+		
+		for (int i = 0; i < r; i++) {
+			for (int j = 0; j < c; j++) {
+				JTextArea cell = tableCells[i][j];
 				
-			if (frame != null) frame.requestFocusInWindow();
+				if (cell != e.getSource()) continue;
+				
+				if (!e.isAltDown()) {
+					if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+						requestFocusInWindow();
+					}
+					
+				}else{
+					if (e.getKeyCode() == KeyEvent.VK_ENTER || 
+						e.getKeyCode() == KeyEvent.VK_DOWN) {
+						setSelectedCell(j, (i + 1) % r);
+						
+					}else if (e.getKeyCode() == KeyEvent.VK_UP) {
+						setSelectedCell(j, (r + i - 1) % r);
+						
+					}else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+						setSelectedCell((j + 1) % c, i);
+						
+					}else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+						setSelectedCell((c + j - 1) % c, i);
+					}
+				}
+			}
 		}
 	}
 	

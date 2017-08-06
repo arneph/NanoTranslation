@@ -602,7 +602,7 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 				document.getTranslations().setKeyOfEntryAtIndex(rowIndex, value);
 				
 			}else if (columnIndex <= document.getTranslations().getNumberOfLanguages()) {
-				document.getTranslations().setTranslationForLanguageOfEntryAtIndex(rowIndex, columnIndex, value);
+				document.getTranslations().setTranslationForLanguageOfEntryAtIndex(rowIndex, columnIndex - 1, value);
 				
 			}else{
 				document.getTranslations().setInformationOfEntryAtIndex(rowIndex, value);
