@@ -168,8 +168,7 @@ public class TableView extends JPanel implements FocusListener,
 			JTextArea cell = tableCells[selectedRow][selectedColumn];
 			
 			cell.requestFocusInWindow();
-			cell.scrollRectToVisible(new Rectangle(cell.getSize()));
-			System.out.printf("r: %02d c: %02d\n", selectedRow, selectedColumn);
+			row.scrollRectToVisible(cell.getBounds());
 		}
 		
 		repositionContents();
@@ -245,8 +244,19 @@ public class TableView extends JPanel implements FocusListener,
 		}
 		
 		repositionContents();
-		revalidate();
-		repaint();
+		
+		if (selectedColumn != -1 && 
+			selectedRow != -1) {
+			JPanel row = tableRows[selectedRow];
+			
+			JTextArea cell = tableCells[selectedRow][selectedColumn];
+			
+			if (cell.isFocusOwner() == false) {
+				cell.requestFocusInWindow();				
+			}
+			
+			row.scrollRectToVisible(cell.getBounds());
+		}
 	}
 	
 	private void addColumns(int c) {
