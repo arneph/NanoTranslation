@@ -159,7 +159,7 @@ public class Document {
 				fileContents += "\t\t<translation>\n";
 				fileContents += "\t\t\t<language>" + language + "</language>\n";
 				fileContents += "\t\t\t<value>" + translation + "</value>\n";
-				fileContents += "\t\t</translation>";
+				fileContents += "\t\t</translation>\n";
 			}
 			
 			fileContents += "\t\t<information>" + information + "</information>\n";
