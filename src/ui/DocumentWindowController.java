@@ -26,6 +26,8 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 	
 	private DocumentWindow window;
 	
+	private boolean showKeys;
+	private boolean showInformation;
 	private HashMap<String, Boolean> activeLanguages;
 	
 	public DocumentWindowController() {
@@ -33,6 +35,8 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		originalDocument = new Document();
 		document = originalDocument.clone();
 		
+		showKeys = true;
+		showInformation = true;
 		activeLanguages = new HashMap<>();
 		
 		window = new DocumentWindow();
@@ -52,61 +56,37 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		window.setVisible(true);
 	}
 	
-	public DocumentWindowController(File f) {
+	public File getFile() {
+		return file;
+	}
+	
+	public void setFile(File f) {
 		file = f;
 		originalDocument = new Document(file);
 		document = originalDocument.clone();
 		
-		activeLanguages = new HashMap<>();
+		activeLanguages.clear();
 		
 		for (int i = 0; i < document.getTranslations().getNumberOfLanguages(); i++) {
 			activeLanguages.put(document.getTranslations().getLanguageAtIndex(i), Boolean.TRUE);
 		}
 		
-		window = new DocumentWindow();
-		
-		window.setDataSource(this);
-		window.setDelegate(this);
-		
-		window.getLanguagesListView().setDataSource(this);
-		window.getLanguagesListView().setDelegate(this);
-		
-		window.getLanguageSelectionListView().setDataSource(this);
-		window.getLanguageSelectionListView().setDelegate(this);
-		
-		window.getEntriesTableView().setDataSource(this);
-		window.getEntriesTableView().setDelegate(this);
-		
-		window.setVisible(true);
+		window.reloadData();
+		window.getLanguagesListView().reloadData();
+		window.getLanguageSelectionListView().reloadData();
+		window.getEntriesTableView().reloadData();	
 	}
 	
-	//Helping Methods:
-	private int getNumberOfActiveLanguages() {
-		int n = 0;
-		
-		for (String language : document.getTranslations().getLanguages()) {
-			if (activeLanguages.get(language) == false) continue;
-			
-			n++;
-		}
-		
-		return n;
+	public boolean hasUnsavedChanged() {
+		return originalDocument.equals(document) == false;
 	}
 	
-	private String getActiveLanguageAtIndex(int index) {
-		int n = 0;
-		
-		for (String language : document.getTranslations().getLanguages()) {
-			if (activeLanguages.get(language) == false) continue;
-			
-			if (n == index) {
-				return language;
-			}else{
-				n++;
-			}
-		}
-		
-		return null;
+	public boolean isActive() {
+		return window.isActive();
+	}
+	
+	public void makeActive() {
+		window.toFront();
 	}
 	
 	//DocumentWindow DataSource & Delegate:
@@ -314,30 +294,11 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		
 		File f = fileChooser.getSelectedFile();
 		
-		if (file == null && 
-			document.equals(originalDocument)) {
-			file = f;
-			originalDocument = new Document(file);
-			document = originalDocument.clone();
-			
-			activeLanguages.clear();
-			
-			for (int i = 0; i < document.getTranslations().getNumberOfLanguages(); i++) {
-				activeLanguages.put(document.getTranslations().getLanguageAtIndex(i), Boolean.TRUE);
-			}
-			
-			window.reloadData();
-			window.getLanguagesListView().reloadData();
-			window.getLanguageSelectionListView().reloadData();
-			window.getEntriesTableView().reloadData();
-			
-		}else{
-			NanoTranslation.newWindowController(f);			
-		}
+		NanoTranslation.openFile(f);
 	}
 	
 	public void pushedClose(DocumentWindow window) {
-		if (originalDocument.equals(document) == false) {
+		if (hasUnsavedChanged()) {
 			int result = JOptionPane.showConfirmDialog(window, 
 			                                           "Do you want to save changes?", 
 			                                           "Unsaved Changes", 
@@ -453,7 +414,7 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 			return document.getTranslations().getNumberOfLanguages();
 			
 		}else if (listView == window.getLanguageSelectionListView()) {
-			return document.getTranslations().getNumberOfLanguages();
+			return 2 + document.getTranslations().getNumberOfLanguages();
 			
 		}else{
 			return 0;
@@ -465,7 +426,15 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 			return false;
 			
 		}else if (listView == window.getLanguageSelectionListView()) {
-			return activeLanguages.get(document.getTranslations().getLanguageAtIndex(index));
+			if (index == 0) {
+				return showKeys;
+				
+			}else if (index <= document.getTranslations().getNumberOfLanguages()) {
+				return activeLanguages.get(document.getTranslations().getLanguageAtIndex(index - 1));				
+				
+			}else{
+				return showInformation;
+			}
 			
 		}else{
 			return false;
@@ -474,7 +443,15 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 	
 	public void setRowChecked(ListView listView, int index, boolean checked) {
 		if (listView == window.getLanguageSelectionListView()) {
-			activeLanguages.put(document.getTranslations().getLanguageAtIndex(index), checked);
+			if (index == 0) {
+				showKeys = checked;
+				
+			}else if (index <= document.getTranslations().getNumberOfLanguages()) {
+				activeLanguages.put(document.getTranslations().getLanguageAtIndex(index - 1), checked);				
+				
+			}else{
+				showInformation = checked;
+			}
 			
 			window.getLanguageSelectionListView().reloadData();
 			window.getEntriesTableView().reloadData();
@@ -486,7 +463,15 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 			return document.getTranslations().getLanguageAtIndex(index);
 			
 		}else if (listView == window.getLanguageSelectionListView()) {
-			return document.getTranslations().getLanguageAtIndex(index);
+			if (index == 0) {
+				return "Keys";
+				
+			}else if (index <= document.getTranslations().getNumberOfLanguages()) {
+				return document.getTranslations().getLanguageAtIndex(index - 1);
+				
+			}else{
+				return "Information";
+			}
 			
 		}else{
 			return "";
@@ -574,9 +559,74 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 	}
 	
 	//TableView DataSource & Delegate:
+	private int getNumberOfActiveLanguages() {
+		int n = 0;
+		
+		for (String language : document.getTranslations().getLanguages()) {
+			if (activeLanguages.get(language) == false) continue;
+			
+			n++;
+		}
+		
+		return n;
+	}
+	
+	private String getActiveLanguageAtIndex(int index) {
+		int n = 0;
+		
+		for (String language : document.getTranslations().getLanguages()) {
+			if (activeLanguages.get(language) == false) continue;
+			
+			if (n == index) {
+				return language;
+			}else{
+				n++;
+			}
+		}
+		
+		return null;
+	}
+	
+	private int getIndexOfKeysColumn() {
+		return (showKeys) ? 0 : -1;
+	}
+	
+	private int getIndexOfFirstLanguageColumn() {
+		if (getNumberOfActiveLanguages() == 0) {
+			return -1;
+		}
+		
+		return (showKeys) ? 1 : 0;
+	}
+	
+	private int getIndexOfLastLanguageColumn() {
+		if (getNumberOfActiveLanguages() == 0) {
+			return -1;
+		}
+		
+		return ((showKeys) ? 0 : -1) + getNumberOfActiveLanguages();
+	}
+	
+	private int getIndexOfInformationColumn() {
+		if (showInformation == false) {
+			return -1;
+		}
+		
+		if (getNumberOfActiveLanguages() == 0) {
+			return (showKeys) ? 1 : 0;
+		}
+		
+		return getIndexOfLastLanguageColumn() + 1;
+	}
+	
 	public int getNumberOfColumns(TableView tableView) {
 		if (tableView == window.getEntriesTableView()) {
-			return 2 + getNumberOfActiveLanguages();
+			int n = getNumberOfActiveLanguages();
+			
+			if (showKeys) n++;
+			if (showInformation) n++;
+			
+			return n;
 			
 		}else{
 			return 0;
@@ -585,7 +635,17 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 	
 	public int getNumberOfRows(TableView tableView) {
 		if (tableView == window.getEntriesTableView()) {
-			return document.getTranslations().getNumberOfEntries();
+			int n = getNumberOfActiveLanguages();
+			
+			if (showKeys) n++;
+			if (showInformation) n++;
+			
+			if (n == 0) {
+				return 0;
+				
+			}else{
+				return document.getTranslations().getNumberOfEntries();				
+			}
 			
 		}else{
 			return 0;
@@ -594,14 +654,18 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 	
 	public String getColumnTitle(TableView tableView, int columnIndex) {
 		if (tableView == window.getEntriesTableView()) {
-			if (columnIndex == 0) {
+			if (columnIndex == getIndexOfKeysColumn()) {
 				return "Key";
 				
-			}else if (columnIndex <= getNumberOfActiveLanguages()) {
-				return getActiveLanguageAtIndex(columnIndex - 1);
+			}else if (columnIndex >= getIndexOfFirstLanguageColumn() && 
+					  columnIndex <= getIndexOfLastLanguageColumn()) {
+				return getActiveLanguageAtIndex(columnIndex - getIndexOfFirstLanguageColumn());
+				
+			}else if (columnIndex == getIndexOfInformationColumn()) {
+				return "Information";
 				
 			}else{
-				return "Information";
+				return null;
 			}
 			
 		}else{
@@ -611,16 +675,20 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 	
 	public String getCellValue(TableView tableView, int columnIndex, int rowIndex) {
 		if (tableView == window.getEntriesTableView()) {
-			if (columnIndex == 0) {
+			if (columnIndex == getIndexOfKeysColumn()) {
 				return document.getTranslations().getKeyOfEntryAtIndex(rowIndex);
 				
-			}else if (columnIndex <= getNumberOfActiveLanguages()) {
-				String language = getActiveLanguageAtIndex(columnIndex - 1);
+			}else if (columnIndex >= getIndexOfFirstLanguageColumn() && 
+					  columnIndex <= getIndexOfLastLanguageColumn()) {
+				String language = getActiveLanguageAtIndex(columnIndex - getIndexOfFirstLanguageColumn());
 				
 				return document.getTranslations().getTranslationForLanguageOfEntryAtIndex(rowIndex, language);
 				
-			}else{
+			}else if (columnIndex == getIndexOfInformationColumn()) {
 				return document.getTranslations().getInformationOfEntryAtIndex(rowIndex);
+				
+			}else{
+				return null;
 			}
 			
 		}else{
@@ -630,16 +698,17 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 	
 	public void setCellValue(TableView tableView, int columnIndex, int rowIndex, String value) {
 		if (tableView == window.getEntriesTableView()) {
-			if (columnIndex == 0) {
+			if (columnIndex == getIndexOfKeysColumn()) {
 				document.getTranslations().setKeyOfEntryAtIndex(rowIndex, value);
 				
-			}else if (columnIndex <= document.getTranslations().getNumberOfLanguages()) {
-				String language = getActiveLanguageAtIndex(columnIndex - 1);
+			}else if (columnIndex >= getIndexOfFirstLanguageColumn() && 
+					  columnIndex <= getIndexOfLastLanguageColumn()) {
+				String language = getActiveLanguageAtIndex(columnIndex - getIndexOfFirstLanguageColumn());
 				
 				document.getTranslations().setTranslationForLanguageOfEntryAtIndex(rowIndex, language, value);
 				
-			}else{
-				document.getTranslations().setInformationOfEntryAtIndex(rowIndex, value);
+			}else if (columnIndex == getIndexOfInformationColumn()) {
+				document.getTranslations().setInformationOfEntryAtIndex(rowIndex, value);	
 			}
 			
 			window.getEntriesTableView().reloadData();

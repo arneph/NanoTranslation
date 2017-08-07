@@ -17,12 +17,41 @@ public class NanoTranslation {
 		newWindowController();
 	}
 	
-	public static void newWindowController() {
-		windowControllers.add(new DocumentWindowController());
+	public static void openFile(File file) {
+		if (file == null || 
+			file.exists() == false || 
+			file.isFile() == false) {
+			throw new IllegalArgumentException();
+		}
+		
+		for (DocumentWindowController windowController : windowControllers) {
+			File f = windowController.getFile();
+			
+			if (file.equals(f)) {
+				windowController.makeActive();
+				
+				return;
+				
+			}else if (f == null && 
+					  windowController.isActive() && 
+					  windowController.hasUnsavedChanged() == false) {
+				windowController.setFile(file);
+				windowController.makeActive();
+				
+				return;
+			}
+		}
+		
+		DocumentWindowController windowController = new DocumentWindowController();
+		
+		windowController.setFile(file);
+		windowController.makeActive();
+		
+		windowControllers.add(windowController);
 	}
 	
-	public static void newWindowController(File file) {
-		windowControllers.add(new DocumentWindowController(file));
+	public static void newWindowController() {
+		windowControllers.add(new DocumentWindowController());
 	}
 	
 	public static void removeWindowController(DocumentWindowController windowController) {
