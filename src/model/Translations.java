@@ -130,28 +130,25 @@ public class Translations {
 			return -1;
 		}
 		
-		return getIndexOfKey(key, 0, entries.length - 1);
-	}
-	
-	private int getIndexOfKey(String key, int a, int b) {
-		int m = a + (b - a) / 2;
-		int r = entries[m].key.compareTo(key);
+		int a = 0;
+		int b = entries.length - 1;
 		
-		if (r > 0) {
-			if (m > a) {
-				return getIndexOfKey(key, a, m - 1);
+		while (a <= b) {
+			int m = a + (b - a) / 2;
+			int r = key.compareTo(entries[m].key);
+			
+			if (r < 0) {
+				b = m - 1;
+				
+			}else if (r > 0) {
+				a = m + 1;
+				
 			}else{
-				return -1;
+				return m;
 			}
-		}else if (r < 0) {
-			if (m < b) {
-				return getIndexOfKey(key, m + 1, b);
-			}else{
-				return - 1;
-			}
-		}else{
-			return m;
 		}
+		
+		return -1;
 	}
 	
 	public String[] getKeys() {
