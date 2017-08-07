@@ -137,13 +137,13 @@ public class Translations {
 		int m = a + (b - a) / 2;
 		int r = entries[m].key.compareTo(key);
 		
-		if (r < 0) {
+		if (r > 0) {
 			if (m > a) {
 				return getIndexOfKey(key, a, m - 1);
 			}else{
 				return -1;
 			}
-		}else if (r > 0) {
+		}else if (r < 0) {
 			if (m < b) {
 				return getIndexOfKey(key, m + 1, b);
 			}else{
