@@ -1,6 +1,7 @@
 package ui;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
 
 import javax.swing.*;
 import javax.swing.plaf.metal.*;
@@ -10,7 +11,13 @@ public class ScrollView extends JScrollPane {
 
 	public JScrollBar createVerticalScrollBar() {
 		JScrollBar scrollBar = new JScrollBar(JScrollBar.VERTICAL);
-		
+
+		getActionMap().put("unitScrollUp", new AbstractAction(){
+		    public void actionPerformed(ActionEvent e) {}
+		});
+		getActionMap().put("unitScrollDown", new AbstractAction(){
+		    public void actionPerformed(ActionEvent e) {}
+		});
 		scrollBar.setUI(new ScrollbarUI());
 		
 		return scrollBar;
@@ -18,7 +25,19 @@ public class ScrollView extends JScrollPane {
 	
 	public JScrollBar createHorizontalScrollBar() {
 		JScrollBar scrollBar = new JScrollBar(JScrollBar.HORIZONTAL);
-		
+
+		getActionMap().put("unitScrollUp", new AbstractAction(){
+		    public void actionPerformed(ActionEvent e) {}
+		});
+		getActionMap().put("unitScrollDown", new AbstractAction(){
+		    public void actionPerformed(ActionEvent e) {}
+		});
+		getActionMap().put("unitScrollLeft", new AbstractAction(){
+		    public void actionPerformed(ActionEvent e) {}
+		});
+		getActionMap().put("unitScrollRight", new AbstractAction(){
+		    public void actionPerformed(ActionEvent e) {}
+		});
 		scrollBar.setUI(new ScrollbarUI());
 		
 		return scrollBar;

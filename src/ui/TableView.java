@@ -5,6 +5,7 @@ import java.awt.event.*;
 import java.util.*;
 
 import javax.swing.*;
+import javax.swing.text.*;
 
 public class TableView extends JPanel implements FocusListener, 
 												 KeyListener, 
@@ -156,7 +157,7 @@ public class TableView extends JPanel implements FocusListener,
 			
 			JPanel row = tableRows[selectedRow];
 			
-			row.setBackground(new Color(223, 223, 223));
+			row.setBackground(new Color(239, 239, 239));
 			
 			for (int i = 0; i < c; i++) {
 				JTextArea cell = tableCells[selectedRow][i];
@@ -167,7 +168,8 @@ public class TableView extends JPanel implements FocusListener,
 			JTextArea cell = tableCells[selectedRow][selectedColumn];
 			
 			cell.requestFocusInWindow();
-			cell.scrollRectToVisible(new Rectangle(0, 0, cell.getWidth(), cell.getHeight()));
+			cell.scrollRectToVisible(new Rectangle(cell.getSize()));
+			System.out.printf("r: %02d c: %02d\n", selectedRow, selectedColumn);
 		}
 		
 		repositionContents();
@@ -225,7 +227,7 @@ public class TableView extends JPanel implements FocusListener,
 			if (selectedRow != i) {
 				row.setBackground(Color.white);
 			}else{
-				row.setBackground(new Color(223, 223, 223));
+				row.setBackground(new Color(239, 239, 239));
 			}
 			
 			for (int j = 0; j < c; j++) {
@@ -395,6 +397,12 @@ public class TableView extends JPanel implements FocusListener,
 			cell.setBackground(null);
 			cell.setForeground(Color.gray);
 			cell.setBorder(null);
+			cell.setLineWrap(true);
+			cell.setWrapStyleWord(true);
+			
+			DefaultCaret caret = (DefaultCaret)cell.getCaret();
+			caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
+			
 			cell.addFocusListener(this);
 			cell.addKeyListener(this);
 			
@@ -454,9 +462,9 @@ public class TableView extends JPanel implements FocusListener,
 		headerView.setPreferredSize(new Dimension(contentWidth, 23));
 		
 		if (selectedRow == -1) {
-			contentView.setPreferredSize(new Dimension(contentWidth, r * 23 - 1));
+			contentView.setPreferredSize(new Dimension(contentWidth, r * 18 - 1));
 		}else{
-			contentView.setPreferredSize(new Dimension(contentWidth, r * 23 + 43));
+			contentView.setPreferredSize(new Dimension(contentWidth, r * 18 + 61));
 		}
 		
 		for (int i = 0; i < r; i++) {

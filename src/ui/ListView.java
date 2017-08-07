@@ -97,7 +97,7 @@ public class ListView extends JPanel implements ActionListener,
 		if (selectedRow != -1) {
 			JPanel row = listRows[selectedRow];
 			
-			row.setBackground(Color.lightGray);
+			row.setBackground(new Color(239, 239, 239));
 		}
 		
 		if (getDelegate() != null) {
@@ -134,7 +134,7 @@ public class ListView extends JPanel implements ActionListener,
 			if (selectedRow != i) {
 				row.setBackground(Color.white);
 			}else{
-				row.setBackground(Color.lightGray);
+				row.setBackground(new Color(239, 239, 239));
 			}
 			
 			checkBox.setSelected(checked);
