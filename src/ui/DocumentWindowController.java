@@ -80,6 +80,35 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		window.setVisible(true);
 	}
 	
+	//Helping Methods:
+	private int getNumberOfActiveLanguages() {
+		int n = 0;
+		
+		for (String language : document.getTranslations().getLanguages()) {
+			if (activeLanguages.get(language) == false) continue;
+			
+			n++;
+		}
+		
+		return n;
+	}
+	
+	private String getActiveLanguageAtIndex(int index) {
+		int n = 0;
+		
+		for (String language : document.getTranslations().getLanguages()) {
+			if (activeLanguages.get(language) == false) continue;
+			
+			if (n == index) {
+				return language;
+			}else{
+				n++;
+			}
+		}
+		
+		return null;
+	}
+	
 	//DocumentWindow DataSource & Delegate:
 	public String getTitle(DocumentWindow window) {
 		String name = "Untitled";
@@ -544,9 +573,10 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 		window.reloadData();
 	}
 	
+	//TableView DataSource & Delegate:
 	public int getNumberOfColumns(TableView tableView) {
 		if (tableView == window.getEntriesTableView()) {
-			return 2 + document.getTranslations().getNumberOfLanguages();
+			return 2 + getNumberOfActiveLanguages();
 			
 		}else{
 			return 0;
@@ -567,9 +597,9 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 			if (columnIndex == 0) {
 				return "Key";
 				
-			}else if (columnIndex <= document.getTranslations().getNumberOfLanguages()) {
-				return document.getTranslations().getLanguageAtIndex(columnIndex - 1);
-			
+			}else if (columnIndex <= getNumberOfActiveLanguages()) {
+				return getActiveLanguageAtIndex(columnIndex - 1);
+				
 			}else{
 				return "Information";
 			}
@@ -584,8 +614,10 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 			if (columnIndex == 0) {
 				return document.getTranslations().getKeyOfEntryAtIndex(rowIndex);
 				
-			}else if (columnIndex <= document.getTranslations().getNumberOfLanguages()) {
-				return document.getTranslations().getTranslationForLanguageOfEntryAtIndex(rowIndex, columnIndex - 1);
+			}else if (columnIndex <= getNumberOfActiveLanguages()) {
+				String language = getActiveLanguageAtIndex(columnIndex - 1);
+				
+				return document.getTranslations().getTranslationForLanguageOfEntryAtIndex(rowIndex, language);
 				
 			}else{
 				return document.getTranslations().getInformationOfEntryAtIndex(rowIndex);
@@ -602,7 +634,9 @@ public class DocumentWindowController implements DocumentWindowDataSource,
 				document.getTranslations().setKeyOfEntryAtIndex(rowIndex, value);
 				
 			}else if (columnIndex <= document.getTranslations().getNumberOfLanguages()) {
-				document.getTranslations().setTranslationForLanguageOfEntryAtIndex(rowIndex, columnIndex - 1, value);
+				String language = getActiveLanguageAtIndex(columnIndex - 1);
+				
+				document.getTranslations().setTranslationForLanguageOfEntryAtIndex(rowIndex, language, value);
 				
 			}else{
 				document.getTranslations().setInformationOfEntryAtIndex(rowIndex, value);
